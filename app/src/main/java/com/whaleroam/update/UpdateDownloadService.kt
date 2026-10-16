@@ -4,6 +4,7 @@ import android.app.Notification
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.Service
+import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.IBinder
@@ -25,6 +26,21 @@ class UpdateDownloadService : Service() {
         const val ACTION_CANCEL = "com.whaleroam.UPDATE_CANCEL"
         const val EXTRA_URL = "url"
         const val EXTRA_VERSION_NAME = "versionName"
+
+        /** 已下载完成的安装包固定路径（供对话框「立即安装」使用） */
+        fun downloadedApk(context: Context): File =
+            File(File(context.getExternalFilesDir(null), "updates"), "whale-roam-latest.apk")
+
+        /** 从任意界面安装已下载的更新包 */
+        fun installApk(context: Context, apk: File) {
+            val uri: Uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", apk)
+            val installIntent = Intent(Intent.ACTION_VIEW).apply {
+                setDataAndType(uri, "application/vnd.android.package-archive")
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
+            context.startActivity(installIntent)
+        }
     }
 
     @Volatile private var cancelled = false
@@ -35,6 +51,7 @@ class UpdateDownloadService : Service() {
         when (intent?.action) {
             ACTION_CANCEL -> {
                 cancelled = true
+                UpdateBus.post(UpdateBus.Event.Cancelled)
                 stopForeground(STOP_FOREGROUND_REMOVE)
                 stopSelf()
                 return START_NOT_STICKY
@@ -43,6 +60,7 @@ class UpdateDownloadService : Service() {
                 val url = intent?.getStringExtra(EXTRA_URL)
                 val verName = intent?.getStringExtra(EXTRA_VERSION_NAME) ?: ""
                 if (url == null) { stopSelf(); return START_NOT_STICKY }
+                cancelled = false
                 startForeground(WhaleRoamApp.NOTIF_UPDATE_ID, buildProgressNotification(verName, 0))
                 download(url, verName)
             }
@@ -80,6 +98,7 @@ class UpdateDownloadService : Service() {
                             if (pct != lastPct) {
                                 lastPct = pct
                                 notifyProgress(versionName, pct)
+                                UpdateBus.post(UpdateBus.Event.Progress(pct, progress, total))
                             }
                         }
                         output.flush()
@@ -152,6 +171,7 @@ class UpdateDownloadService : Service() {
             .setOngoing(false)
             .build()
         nm().notify(WhaleRoamApp.NOTIF_UPDATE_ID, n)
+        UpdateBus.post(UpdateBus.Event.Done(apk.absolutePath))
         stopForeground(STOP_FOREGROUND_REMOVE)
         stopSelf()
     }
@@ -164,6 +184,7 @@ class UpdateDownloadService : Service() {
             .setAutoCancel(true)
             .build()
         nm().notify(WhaleRoamApp.NOTIF_UPDATE_ID, n)
+        UpdateBus.post(UpdateBus.Event.Failed(msg))
         stopForeground(STOP_FOREGROUND_REMOVE)
         stopSelf()
     }

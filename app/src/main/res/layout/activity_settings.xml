@@ -6,7 +6,7 @@
         android:layout_width="match_parent" android:layout_height="?attr/actionBarSize"
         android:background="?attr/colorPrimary" app:titleTextColor="@color/white" app:title="@string/title_settings" />
     <com.google.android.material.card.MaterialCardView android:layout_width="match_parent" android:layout_height="wrap_content"
-        android:layout_margin="12dp" app:cardElevation="2dp">
+        android:layout_margin="12dp" app:cardElevation="2dp" app:cardCornerRadius="14dp">
         <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
             android:orientation="vertical" android:padding="16dp">
             <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
@@ -21,14 +21,21 @@
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>
     <com.google.android.material.card.MaterialCardView android:layout_width="match_parent" android:layout_height="wrap_content"
-        android:layout_marginHorizontal="12dp" android:layout_marginBottom="12dp" app:cardElevation="2dp">
+        android:layout_marginHorizontal="12dp" android:layout_marginBottom="12dp" app:cardElevation="2dp" app:cardCornerRadius="14dp">
         <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
             android:orientation="vertical" android:padding="16dp">
+            <TextView android:id="@+id/rowCheckUpdate" android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:padding="12dp" android:text="@string/pref_check_update" android:textSize="16sp"
+                android:textColor="@color/whale_primary_dark" />
+            <View android:layout_width="match_parent" android:layout_height="1dp" android:background="#EEEEEE" />
             <TextView android:id="@+id/rowDisclaimer" android:layout_width="match_parent" android:layout_height="wrap_content"
-                android:padding="8dp" android:text="@string/pref_disclaimer" android:textSize="16sp" />
+                android:padding="12dp" android:text="@string/pref_disclaimer" android:textSize="16sp" />
             <View android:layout_width="match_parent" android:layout_height="1dp" android:background="#EEEEEE" />
             <TextView android:id="@+id/rowAbout" android:layout_width="match_parent" android:layout_height="wrap_content"
-                android:padding="8dp" android:text="@string/pref_about" android:textSize="16sp" />
+                android:padding="12dp" android:text="@string/pref_about" android:textSize="16sp" />
+            <View android:layout_width="match_parent" android:layout_height="1dp" android:background="#EEEEEE" />
+            <TextView android:id="@+id/versionText" android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:padding="12dp" android:textSize="13sp" android:textColor="#888888" />
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>
 </LinearLayout>

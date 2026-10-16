@@ -2,6 +2,9 @@ package com.whaleroam
 
 import android.Manifest
 import android.app.AlertDialog
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
@@ -23,16 +26,21 @@ import com.whaleroam.service.MockLocationEngine
 import com.whaleroam.service.MockLocationService
 import com.whaleroam.ui.HistoryActivity
 import com.whaleroam.ui.SettingsActivity
-import com.whaleroam.update.UpdateDownloadService
+import com.whaleroam.ui.UpdateDialog
 import com.whaleroam.update.UpdateInfo
 import com.whaleroam.update.UpdateManager
-import org.json.JSONArray
+import com.whaleroam.util.GeoCoordConverter
+import com.whaleroam.util.NominatimClient
 import org.osmdroid.config.Configuration
+import org.osmdroid.events.MapEventsReceiver
+import org.osmdroid.events.MapListener
+import org.osmdroid.events.ScrollEvent
+import org.osmdroid.events.ZoomEvent
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory
 import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.MapView
-import java.net.URLEncoder
-import kotlin.concurrent.thread
+import org.osmdroid.views.overlay.MapEventsOverlay
+import org.osmdroid.views.overlay.Marker
 
 class MainActivity : AppCompatActivity() {
 
@@ -43,6 +51,9 @@ class MainActivity : AppCompatActivity() {
     private var targetLat = 22.5431
     private var targetLon = 114.0579
     private var mocking = false
+
+    /** 长按地图查询时的临时标记 */
+    private var longPressMarker: Marker? = null
 
     private val permLocationReq = 101
     private val permNotifReq = 102
@@ -63,6 +74,15 @@ class MainActivity : AppCompatActivity() {
         ensureDisclaimerAccepted()
         maybeAutoCheckUpdate()
 
+        handleMapIntent(intent)
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        handleMapIntent(intent)
+    }
+
+    private fun handleMapIntent(intent: Intent?) {
         intent?.let {
             val lat = it.getDoubleExtra("extra_lat", Double.NaN)
             val lon = it.getDoubleExtra("extra_lon", Double.NaN)
@@ -79,26 +99,36 @@ class MainActivity : AppCompatActivity() {
         binding.mapView.controller.setZoom(15.0)
         binding.mapView.controller.setCenter(GeoPoint(targetLat, targetLon))
 
-        binding.mapView.addMapListener(object : org.osmdroid.events.MapListener {
-            override fun onScroll(event: org.osmdroid.events.ScrollEvent?): Boolean {
+        // 拖动地图时，以中心点为模拟目标（准星选点模式）
+        binding.mapView.addMapListener(object : MapListener {
+            override fun onScroll(event: ScrollEvent?): Boolean {
                 val c = binding.mapView.mapCenter as GeoPoint
                 setTarget(c.latitude, c.longitude, recenter = false)
                 return true
             }
-            override fun onZoom(event: org.osmdroid.events.ZoomEvent?): Boolean = true
+            override fun onZoom(event: ZoomEvent?): Boolean = true
         })
+
+        // 长按地图：查询该点详细地址（参照 gogogo 长按查询）
+        binding.mapView.overlays.add(MapEventsOverlay(object : MapEventsReceiver {
+            override fun singleTapConfirmedHelper(p: GeoPoint?): Boolean = false
+            override fun longPressHelper(p: GeoPoint?): Boolean {
+                p?.let { onMapLongPress(it.latitude, it.longitude) }
+                return true
+            }
+        }))
 
         updateCoordText()
     }
 
     private fun setupActions() {
-        binding.startStopBtn.setOnClickListener {
+        binding.startFab.setOnClickListener {
             if (mocking) stopMock() else startMock()
         }
         binding.joystickBtn.setOnClickListener { toggleJoystick() }
         binding.saveBtn.setOnClickListener {
             history.add("手动收藏", targetLat, targetLon)
-            toast("已收藏")
+            toast(getString(R.string.longpress_saved))
         }
         binding.searchInput.setOnEditorActionListener { _, actionId, _ ->
             if (actionId == EditorInfo.IME_ACTION_SEARCH) {
@@ -161,7 +191,8 @@ class MainActivity : AppCompatActivity() {
         }
         ContextCompat.startForegroundService(this, svc)
         mocking = true
-        binding.startStopBtn.text = getString(R.string.action_stop)
+        binding.startFab.text = getString(R.string.action_stop)
+        binding.startFab.setIconResource(R.drawable.ic_stop)
         binding.statusText.text = getString(R.string.status_running, targetLat, targetLon)
     }
 
@@ -180,7 +211,8 @@ class MainActivity : AppCompatActivity() {
         }
         startService(svc)
         mocking = false
-        binding.startStopBtn.text = getString(R.string.action_start)
+        binding.startFab.text = getString(R.string.action_start)
+        binding.startFab.setIconResource(R.drawable.ic_play)
         binding.statusText.text = getString(R.string.status_idle)
     }
 
@@ -212,37 +244,50 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    // ---------- 搜索 / 坐标输入 ----------
+
     private fun doSearch(q: String) {
         val query = q.trim()
         if (query.isEmpty()) return
         val coord = parseCoord(query)
         if (coord != null) {
-            setTarget(coord.first, coord.second)
+            askCoordinateSystem(coord.first, coord.second)
             return
         }
-        thread(name="whale-geocode") {
-            try {
-                val url = "https://nominatim.openstreetmap.org/search?format=json&limit=1&q=" +
-                        URLEncoder.encode(query, "UTF-8")
-                val conn = (java.net.URL(url).openConnection() as java.net.HttpURLConnection).apply {
-                    connectTimeout = 10000
-                    readTimeout = 10000
-                    setRequestProperty("User-Agent", packageName)
-                }
-                val arr = JSONArray(conn.inputStream.bufferedReader().use { it.readText() })
-                conn.disconnect()
-                runOnUiThread {
-                    if (arr.length() > 0) {
-                        val o = arr.getJSONObject(0)
-                        setTarget(o.getDouble("lat"), o.getDouble("lon"))
-                    } else {
-                        toast("未找到地点")
-                    }
-                }
-            } catch (t: Throwable) {
-                runOnUiThread { toast("搜索失败：${t.message}") }
+        toast(getString(R.string.search_searching))
+        NominatimClient.search(query, object : NominatimClient.Callback<NominatimClient.SearchResult> {
+            override fun onSuccess(result: NominatimClient.SearchResult) {
+                runOnUiThread { setTarget(result.lat, result.lon) }
             }
-        }
+            override fun onError(msg: String) {
+                runOnUiThread {
+                    toast(if (msg.isBlank()) "未找到地点" else "搜索失败：$msg")
+                }
+            }
+        })
+    }
+
+    /** 检测到坐标输入时，让用户选择来源坐标系（WGS-84 / GCJ-02 / BD-09），统一换算为 WGS-84 */
+    private fun askCoordinateSystem(lat: Double, lon: Double) {
+        val systems = arrayOf(
+            getString(R.string.coord_sys_wgs),
+            getString(R.string.coord_sys_gcj),
+            getString(R.string.coord_sys_bd)
+        )
+        var checked = 0
+        AlertDialog.Builder(this)
+            .setTitle(R.string.coord_sys_title)
+            .setSingleChoiceItems(systems, checked) { _, which -> checked = which }
+            .setPositiveButton(R.string.coord_confirm) { _, _ ->
+                val from = GeoCoordConverter.CoordSystem.values()[checked]
+                val (wLat, wLon) = GeoCoordConverter.toWgs84(lat, lon, from)
+                setTarget(wLat, wLon)
+                if (from != GeoCoordConverter.CoordSystem.WGS84) {
+                    toast(getString(R.string.coord_converted, wLat, wLon))
+                }
+            }
+            .setNegativeButton(R.string.cancel, null)
+            .show()
     }
 
     private fun parseCoord(s: String): Pair<Double, Double>? {
@@ -256,31 +301,95 @@ class MainActivity : AppCompatActivity() {
         } catch (t: Throwable) { null }
     }
 
-    private fun checkUpdate() {
-        toast(getString(R.string.update_checking))
-        settings.lastUpdateCheckAt = System.currentTimeMillis()
-        UpdateManager.check(this, BuildConfig.VERSION_CODE, object : UpdateManager.Callback {
-            override fun onNeedUpdate(info: UpdateInfo) {
-                runOnUiThread { showUpdateDialog(info) }
+    // ---------- 长按地图查询地址 ----------
+
+    private fun onMapLongPress(lat: Double, lon: Double) {
+        showLongPressMarker(lat, lon)
+        val loading = AlertDialog.Builder(this)
+            .setTitle(R.string.longpress_title)
+            .setMessage(R.string.longpress_locating)
+            .setCancelable(true)
+            .show()
+        NominatimClient.reverse(lat, lon, object : NominatimClient.Callback<String> {
+            override fun onSuccess(address: String) {
+                runOnUiThread {
+                    loading.dismiss()
+                    showAddressDialog(lat, lon, address)
+                }
             }
-            override fun onLatest() { runOnUiThread { toast(getString(R.string.update_latest)) } }
-            override fun onError(msg: String) { runOnUiThread { toast("检查失败：$msg") } }
+            override fun onError(msg: String) {
+                runOnUiThread {
+                    loading.dismiss()
+                    removeLongPressMarker()
+                    toast(getString(R.string.longpress_no_address))
+                }
+            }
         })
     }
 
-    /** 启动时自动检查更新：默认 24 小时最多一次，静默进行，发现新版本才弹窗 */
+    private fun showLongPressMarker(lat: Double, lon: Double) {
+        removeLongPressMarker()
+        val m = Marker(binding.mapView)
+        m.position = GeoPoint(lat, lon)
+        m.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
+        m.title = "%.6f, %.6f".format(lat, lon)
+        longPressMarker = m
+        binding.mapView.overlays.add(m)
+        binding.mapView.invalidate()
+    }
+
+    private fun removeLongPressMarker() {
+        longPressMarker?.let {
+            binding.mapView.overlays.remove(it)
+            binding.mapView.invalidate()
+        }
+        longPressMarker = null
+    }
+
+    private fun showAddressDialog(lat: Double, lon: Double, address: String) {
+        AlertDialog.Builder(this)
+            .setTitle(R.string.longpress_title)
+            .setMessage("%.6f, %.6f\n\n%s".format(lat, lon, address))
+            .setPositiveButton(R.string.longpress_set_here) { _, _ ->
+                removeLongPressMarker()
+                setTarget(lat, lon)
+            }
+            .setNeutralButton(R.string.longpress_copy) { _, _ ->
+                val cm = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                cm.setPrimaryClip(ClipData.newPlainText("address", address))
+                toast(getString(R.string.longpress_copy_done))
+            }
+            .setNegativeButton(R.string.longpress_save_here) { _, _ ->
+                history.add(address.take(24), lat, lon)
+                toast(getString(R.string.longpress_saved))
+            }
+            .setOnCancelListener { removeLongPressMarker() }
+            .show()
+    }
+
+    // ---------- 更新 ----------
+
+    private fun checkUpdate() {
+        UpdateDialog.startCheck(this)
+    }
+
+    /** 启动时自动检查更新：默认 24 小时最多一次；有新版本弹窗提示，无更新吐司提示 */
     private fun maybeAutoCheckUpdate() {
         val intervalMs = 24 * 60 * 60 * 1000L
         if (System.currentTimeMillis() - settings.lastUpdateCheckAt < intervalMs) return
         settings.lastUpdateCheckAt = System.currentTimeMillis()
         UpdateManager.check(this, BuildConfig.VERSION_CODE, object : UpdateManager.Callback {
             override fun onNeedUpdate(info: UpdateInfo) {
-                runOnUiThread { showUpdateDialog(info) }
+                runOnUiThread { UpdateDialog.showFound(this@MainActivity, info) }
             }
-            override fun onLatest() {}
-            override fun onError(msg: String) {}
+            override fun onLatest() {
+                runOnUiThread { toast(getString(R.string.update_latest)) }
+            }
+            override fun onError(msg: String) { /* 静默：自动检查失败不打扰用户 */ }
         })
     }
+
+    // ---------- 免责声明 ----------
 
     /** 首次启动必须阅读并同意免责声明，否则不能使用本软件 */
     private fun ensureDisclaimerAccepted() {
@@ -296,20 +405,11 @@ class MainActivity : AppCompatActivity() {
             .show()
     }
 
-    private fun showUpdateDialog(info: UpdateInfo) {
+    private fun showDisclaimer() {
         AlertDialog.Builder(this)
-            .setTitle(getString(R.string.update_available, info.versionName))
-            .setMessage(info.changelog.ifBlank { getString(R.string.update_no_notes) })
-            .setPositiveButton(R.string.update_download) { _, _ ->
-                val svc = Intent(this, UpdateDownloadService::class.java).apply {
-                    action = UpdateDownloadService.ACTION_DOWNLOAD
-                    putExtra(UpdateDownloadService.EXTRA_URL, info.apkUrl)
-                    putExtra(UpdateDownloadService.EXTRA_VERSION_NAME, info.versionName)
-                }
-                ContextCompat.startForegroundService(this, svc)
-                toast("开始下载，可在通知栏查看进度")
-            }
-            .setNegativeButton(R.string.cancel, null)
+            .setTitle(R.string.disclaimer_title)
+            .setMessage(R.string.disclaimer_body)
+            .setPositiveButton(R.string.ok, null)
             .show()
     }
 
@@ -326,14 +426,6 @@ class MainActivity : AppCompatActivity() {
             R.id.menu_disclaimer -> { showDisclaimer(); true }
             else -> super.onOptionsItemSelected(item)
         }
-    }
-
-    private fun showDisclaimer() {
-        AlertDialog.Builder(this)
-            .setTitle(R.string.disclaimer_title)
-            .setMessage(R.string.disclaimer_body)
-            .setPositiveButton(R.string.ok, null)
-            .show()
     }
 
     private fun toast(msg: String) = Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()

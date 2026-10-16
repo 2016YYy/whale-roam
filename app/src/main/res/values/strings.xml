@@ -40,8 +40,8 @@
     <string name="pref_disclaimer">免责声明</string>
     <string name="pref_about">关于</string>
     <string name="disclaimer_title">免责声明</string>
-    <string name="disclaimer_agree">同意并继续</string>
-    <string name="disclaimer_exit">不同意并退出</string>
+    <string name="disclaimer_agree">我同意</string>
+    <string name="disclaimer_exit">不同意</string>
     <string name="disclaimer_body">鲸游（WhaleRoam）是一款仅供学习 Android 定位原理与地图开发的开源工具。\n\n请勿将本软件用于：\n1. 任何考试、打卡、运动打卡类 App 的作弊行为；\n2. 任何违反法律法规、侵犯他人权益的用途；\n3. 任何可能破坏平台公平性的游戏行为。\n\n因使用本软件产生的一切后果由使用者自行承担，开发者不承担任何责任。继续使用即表示您已阅读并同意本声明。</string>
     <string name="about_body">鲸游 WhaleRoam %1$s\n基于 Android 调试 API 与 OpenStreetMap 开源实现。\n本项目与「影梭 GoGoGo」无任何代码关联，为独立 clean-room 重写。\n仓库：https://github.com/2016YYy/whale-roam</string>
     <string name="confirm_stop_title">停止模拟？</string>
@@ -50,4 +50,42 @@
     <string name="cancel">取消</string>
     <string name="save">保存</string>
     <string name="delete">删除</string>
+
+    <!-- 坐标系选择（坐标输入支持 WGS-84 / GCJ-02 / BD-09） -->
+    <string name="coord_sys_title">选择输入坐标系</string>
+    <string name="coord_sys_wgs">WGS-84（GPS 原始坐标）</string>
+    <string name="coord_sys_gcj">GCJ-02（国测局坐标，高德/腾讯地图）</string>
+    <string name="coord_sys_bd">BD-09（百度坐标）</string>
+    <string name="coord_converted">已转换为 WGS-84：%1$.6f, %2$.6f</string>
+    <string name="coord_confirm">确定</string>
+
+    <!-- 长按地图查询地址 -->
+    <string name="longpress_title">位置详情</string>
+    <string name="longpress_locating">正在查询地址…</string>
+    <string name="longpress_no_address">未查询到该位置的详细地址</string>
+    <string name="longpress_set_here">设为此处</string>
+    <string name="longpress_copy">复制地址</string>
+    <string name="longpress_copy_done">地址已复制</string>
+    <string name="longpress_save_here">收藏此处</string>
+    <string name="longpress_saved">已收藏</string>
+
+    <!-- CloudDrive 风格更新对话框 -->
+    <string name="update_check_title">检查更新</string>
+    <string name="update_checking_body">正在检查更新，请稍候…</string>
+    <string name="update_dl_start">立即下载</string>
+    <string name="update_dl_later">稍后再说</string>
+    <string name="update_dl_doing">正在下载，可关闭此窗口，下载将在后台继续</string>
+    <string name="update_dl_indeterminate">正在连接下载服务器…</string>
+    <string name="update_downloaded_of">已下载 %1$s / %2$s</string>
+    <string name="update_install_now">立即安装</string>
+    <string name="update_retry">重试</string>
+    <string name="update_dl_failed">下载失败</string>
+    <string name="update_dl_cancelled">已取消下载</string>
+    <string name="update_dl_cancel">取消下载</string>
+    <string name="update_check_failed_toast">检查失败：%1$s</string>
+
+    <!-- 设置页 -->
+    <string name="pref_check_update">检查更新</string>
+    <string name="pref_version">当前版本</string>
+    <string name="search_searching">正在搜索…</string>
 </resources>

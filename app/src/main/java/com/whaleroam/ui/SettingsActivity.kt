@@ -30,6 +30,16 @@ class SettingsActivity : AppCompatActivity() {
         val accVal = findViewById<TextView>(R.id.accVal)
         val disclaimerRow = findViewById<TextView>(R.id.rowDisclaimer)
         val aboutRow = findViewById<TextView>(R.id.rowAbout)
+        val checkUpdateRow = findViewById<TextView>(R.id.rowCheckUpdate)
+        val versionText = findViewById<TextView>(R.id.versionText)
+
+        versionText.text = getString(R.string.pref_version) + "：" + BuildConfig.VERSION_NAME +
+                " (" + BuildConfig.VERSION_CODE + ")"
+
+        // 关于—检查更新：弹出 CloudDrive 风格更新窗口（含下载进度条）
+        checkUpdateRow.setOnClickListener {
+            UpdateDialog.startCheck(this)
+        }
 
         speedBar.progress = (settings.joystickSpeedMps * 10).toInt()
         speedVal.text = "${settings.joystickSpeedMps} m/s"
