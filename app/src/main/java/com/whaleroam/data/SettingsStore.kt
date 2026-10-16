@@ -22,4 +22,53 @@ class SettingsStore(context: Context) {
     var lastUpdateCheckAt: Long
         get() = sp.getLong("last_update_check_at", 0L)
         set(v) = sp.edit().putLong("last_update_check_at", v).apply()
+
+    // ---------- 注入仿真（对标 gogogo ServiceGo） ----------
+
+    /** 注入海拔（米），默认 55.0 */
+    var altitudeMeters: Double
+        get() = sp.getFloat("altitude", 55f).toDouble()
+        set(v) = sp.edit().putFloat("altitude", v.toFloat().coerceIn(0f, 9000f)).apply()
+
+    /** 随机偏移开关（防检测微抖动） */
+    var randomOffsetEnabled: Boolean
+        get() = sp.getBoolean("random_offset", false)
+        set(v) = sp.edit().putBoolean("random_offset", v).apply()
+
+    /** 随机偏移半径（米），默认 10 */
+    var offsetRadiusMeters: Float
+        get() = sp.getFloat("offset_radius", 10f)
+        set(v) = sp.edit().putFloat("offset_radius", v.coerceIn(1f, 100f)).apply()
+
+    // ---------- 摇杆三档速度（对标 gogogo 走/跑/骑） ----------
+
+    var walkSpeedMps: Float
+        get() = sp.getFloat("speed_walk", 1.2f)
+        set(v) = sp.edit().putFloat("speed_walk", v.coerceIn(0.1f, 30f)).apply()
+
+    var runSpeedMps: Float
+        get() = sp.getFloat("speed_run", 3.6f)
+        set(v) = sp.edit().putFloat("speed_run", v.coerceIn(0.1f, 30f)).apply()
+
+    var bikeSpeedMps: Float
+        get() = sp.getFloat("speed_bike", 10f)
+        set(v) = sp.edit().putFloat("speed_bike", v.coerceIn(0.1f, 60f)).apply()
+
+    /** 当前速度档位：0 走 / 1 跑 / 2 骑 */
+    var speedTier: Int
+        get() = sp.getInt("speed_tier", 0)
+        set(v) = sp.edit().putInt("speed_tier", v.coerceIn(0, 2)).apply()
+
+    /** 当前档位对应的速度 */
+    val currentSpeedMps: Float
+        get() = when (speedTier) {
+            1 -> runSpeedMps
+            2 -> bikeSpeedMps
+            else -> walkSpeedMps
+        }
+
+    /** 历史记录有效期（天），默认 7 */
+    var historyExpirationDays: Int
+        get() = sp.getInt("history_expiration_days", 7)
+        set(v) = sp.edit().putInt("history_expiration_days", v.coerceIn(1, 365)).apply()
 }

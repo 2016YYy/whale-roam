@@ -29,21 +29,27 @@ class MockLocationService : Service() {
             else -> {
                 val lat = intent?.getDoubleExtra(EXTRA_LAT, 0.0) ?: 0.0
                 val lon = intent?.getDoubleExtra(EXTRA_LON, 0.0) ?: 0.0
-                val acc = intent?.getFloatExtra(EXTRA_ACCURACY, 10f) ?: 10f
-                startMock(lat, lon, acc)
+                val settings = com.whaleroam.data.SettingsStore(this)
+                val cfg = MockLocationEngine.InjectConfig(
+                    accuracyMeters = settings.accuracyMeters,
+                    altitudeMeters = settings.altitudeMeters,
+                    randomOffsetEnabled = settings.randomOffsetEnabled,
+                    offsetRadiusMeters = settings.offsetRadiusMeters,
+                )
+                startMock(lat, lon, cfg)
             }
         }
         return START_STICKY
     }
 
-    private fun startMock(lat: Double, lon: Double, accuracy: Float) {
+    private fun startMock(lat: Double, lon: Double, cfg: MockLocationEngine.InjectConfig) {
         val notification = buildNotification()
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
             startForeground(WhaleRoamApp.NOTIF_MOCK_ID, notification, android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION)
         } else {
             startForeground(WhaleRoamApp.NOTIF_MOCK_ID, notification)
         }
-        runCatching { MockLocationEngine.start(this, lat, lon, accuracy) }
+        runCatching { MockLocationEngine.start(this, lat, lon, cfg) }
             .onFailure { stopSelf() }
     }
 

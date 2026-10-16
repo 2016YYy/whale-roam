@@ -15,16 +15,32 @@ data class Place(
 class HistoryStore(private val context: Context) {
 
     private val file: File by lazy { File(context.filesDir, "history.json") }
+    private val settings by lazy { SettingsStore(context) }
 
+    /** 读取列表：顺带归档过期记录（默认 7 天，可在设置中调整），对标 gogogo recordArchive */
     fun list(): MutableList<Place> {
         if (!file.exists()) return mutableListOf()
-        return runCatching {
+        val raw = runCatching {
             val arr = JSONArray(file.readText())
             (0 until arr.length()).map { i ->
                 val o = arr.getJSONObject(i)
                 Place(o.getLong("id"), o.getString("label"), o.getDouble("lat"), o.getDouble("lon"))
             }.toMutableList()
         }.getOrDefault(mutableListOf())
+        val cutoff = System.currentTimeMillis() - settings.historyExpirationDays * 24L * 3600L * 1000L
+        val (kept, expired) = raw.partition { it.id >= cutoff }
+        if (expired.isNotEmpty()) save(kept) // 有过期才回写，避免每次读都落盘
+        return kept.toMutableList()
+    }
+
+    /** 逆地理编码成功后回填标签（自动记录的定位历史先用坐标占位） */
+    fun updateLabel(id: Long, label: String) {
+        val list = list()
+        val idx = list.indexOfFirst { it.id == id }
+        if (idx >= 0) {
+            list[idx] = list[idx].copy(label = label)
+            save(list)
+        }
     }
 
     fun add(label: String, lat: Double, lon: Double): Place {

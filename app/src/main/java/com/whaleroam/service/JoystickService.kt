@@ -32,6 +32,9 @@ class JoystickService : Service() {
     private var knobDy = 0f
     private var moved = false
     private val ticker = Handler(Looper.getMainLooper())
+    private var tierButton: android.widget.TextView? = null
+
+    private val tierLabels = arrayOf("走", "跑", "骑")
 
     private val tickRunnable = object : Runnable {
         override fun run() {
@@ -96,6 +99,29 @@ class JoystickService : Service() {
         }
         container.addView(knob, knobLp)
 
+        // 速度档位切换按钮（走/跑/骑，对标 gogogo 三档速度键）：置于摇杆顶部
+        val tier = android.widget.TextView(this).apply {
+            text = tierLabels[settings.speedTier]
+            textSize = 12f
+            setTextColor(android.graphics.Color.WHITE)
+            gravity = Gravity.CENTER
+            background = com.whaleroam.util.DrawableFactory.joystickKnob(context)
+            setOnClickListener {
+                val next = (settings.speedTier + 1) % 3
+                settings.speedTier = next
+                text = tierLabels[next]
+                // 档位变化立即回写引擎速度，下一个注入 tick 生效
+                MockLocationEngine.currentSpeedMps = settings.currentSpeedMps
+            }
+        }
+        val tierSize = (36 * resources.displayMetrics.density).toInt()
+        val tierLp = FrameLayout.LayoutParams(tierSize, tierSize).apply {
+            gravity = Gravity.TOP or Gravity.CENTER_HORIZONTAL
+            topMargin = (6 * resources.displayMetrics.density).toInt()
+        }
+        container.addView(tier, tierLp)
+        tierButton = tier
+
         container.setOnTouchListener { _, e ->
             when (e.action) {
                 MotionEvent.ACTION_DOWN, MotionEvent.ACTION_MOVE -> {
@@ -133,14 +159,17 @@ class JoystickService : Service() {
 
     private fun applyMove() {
         if (!MockLocationEngine.running) return
-        val speed = settings.joystickSpeedMps
+        val speed = settings.currentSpeedMps
+        MockLocationEngine.currentSpeedMps = speed
         val dt = TICK_MS / 1000.0
         val distanceM = speed * dt
         val lat = MockLocationEngine.currentLat
         val dLat = -knobDy / (140 * resources.displayMetrics.density / 2f) * distanceM / 111320.0
         val dLon = knobDx / (140 * resources.displayMetrics.density / 2f) * distanceM /
                 (111320.0 * cos(Math.toRadians(lat)))
-        MockLocationEngine.moveBy(dLat, dLon, settings.accuracyMeters)
+        // 屏幕向量转地理方位角：正北 0° 顺时针（对标 gogogo bearing = 90 - angle）
+        val bearing = ((Math.toDegrees(kotlin.math.atan2(knobDx.toDouble(), -knobDy.toDouble())) + 360.0) % 360.0).toFloat()
+        MockLocationEngine.moveBy(dLat, dLon, settings.accuracyMeters, bearing)
     }
 
     override fun onDestroy() {

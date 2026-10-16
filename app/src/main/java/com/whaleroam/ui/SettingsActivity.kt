@@ -6,6 +6,7 @@ import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import com.google.android.material.appbar.MaterialToolbar
+import com.google.android.material.materialswitch.MaterialSwitch
 import com.whaleroam.BuildConfig
 import com.whaleroam.R
 import com.whaleroam.data.SettingsStore
@@ -24,10 +25,49 @@ class SettingsActivity : AppCompatActivity() {
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         toolbar.setNavigationOnClickListener { finish() }
 
-        val speedBar = findViewById<SeekBar>(R.id.speedBar)
-        val speedVal = findViewById<TextView>(R.id.speedVal)
-        val accBar = findViewById<SeekBar>(R.id.accBar)
-        val accVal = findViewById<TextView>(R.id.accVal)
+        // ---------- 定位注入仿真 ----------
+        bindSeekBar(R.id.accBar, R.id.accVal,
+            init = settings.accuracyMeters.toInt(),
+            fmt = { "${it.coerceAtLeast(1)} m" },
+            onChange = { p -> settings.accuracyMeters = p.coerceAtLeast(1).toFloat() })
+
+        bindSeekBar(R.id.altBar, R.id.altVal,
+            init = settings.altitudeMeters.toInt(),
+            fmt = { "$it m" },
+            onChange = { p -> settings.altitudeMeters = p.toDouble() })
+
+        val offsetSwitch = findViewById<MaterialSwitch>(R.id.randomOffsetSwitch)
+        offsetSwitch.isChecked = settings.randomOffsetEnabled
+        offsetSwitch.setOnCheckedChangeListener { _, checked -> settings.randomOffsetEnabled = checked }
+
+        bindSeekBar(R.id.offsetBar, R.id.offsetVal,
+            init = settings.offsetRadiusMeters.toInt(),
+            fmt = { "${it.coerceAtLeast(1)} m" },
+            onChange = { p -> settings.offsetRadiusMeters = p.coerceAtLeast(1).toFloat() })
+
+        // ---------- 摇杆三档速度（走 / 跑 / 骑） ----------
+        bindSeekBar(R.id.walkBar, R.id.walkVal,
+            init = (settings.walkSpeedMps * 10).toInt(),
+            fmt = { "${"%.1f".format(it / 10f)} m/s" },
+            onChange = { p -> settings.walkSpeedMps = (p / 10f).coerceAtLeast(0.1f) })
+
+        bindSeekBar(R.id.runBar, R.id.runVal,
+            init = (settings.runSpeedMps * 10).toInt(),
+            fmt = { "${"%.1f".format(it / 10f)} m/s" },
+            onChange = { p -> settings.runSpeedMps = (p / 10f).coerceAtLeast(0.1f) })
+
+        bindSeekBar(R.id.bikeBar, R.id.bikeVal,
+            init = (settings.bikeSpeedMps * 10).toInt(),
+            fmt = { "${"%.1f".format(it / 10f)} m/s" },
+            onChange = { p -> settings.bikeSpeedMps = (p / 10f).coerceAtLeast(0.1f) })
+
+        // ---------- 历史记录有效期 ----------
+        bindSeekBar(R.id.historyDaysBar, R.id.historyDaysVal,
+            init = settings.historyExpirationDays,
+            fmt = { "${it.coerceAtLeast(1)} 天" },
+            onChange = { p -> settings.historyExpirationDays = p.coerceAtLeast(1) })
+
+        // ---------- 关于 ----------
         val disclaimerRow = findViewById<TextView>(R.id.rowDisclaimer)
         val aboutRow = findViewById<TextView>(R.id.rowAbout)
         val checkUpdateRow = findViewById<TextView>(R.id.rowCheckUpdate)
@@ -40,30 +80,6 @@ class SettingsActivity : AppCompatActivity() {
         checkUpdateRow.setOnClickListener {
             UpdateDialog.startCheck(this)
         }
-
-        speedBar.progress = (settings.joystickSpeedMps * 10).toInt()
-        speedVal.text = "${settings.joystickSpeedMps} m/s"
-        speedBar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
-            override fun onProgressChanged(sb: SeekBar?, p: Int, fromUser: Boolean) {
-                val v = p / 10f
-                settings.joystickSpeedMps = v
-                speedVal.text = "$v m/s"
-            }
-            override fun onStartTrackingTouch(sb: SeekBar?) {}
-            override fun onStopTrackingTouch(sb: SeekBar?) {}
-        })
-
-        accBar.progress = settings.accuracyMeters.toInt()
-        accVal.text = "${settings.accuracyMeters.toInt()} m"
-        accBar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
-            override fun onProgressChanged(sb: SeekBar?, p: Int, fromUser: Boolean) {
-                val v = p.coerceAtLeast(1).toFloat()
-                settings.accuracyMeters = v
-                accVal.text = "${v.toInt()} m"
-            }
-            override fun onStartTrackingTouch(sb: SeekBar?) {}
-            override fun onStopTrackingTouch(sb: SeekBar?) {}
-        })
 
         disclaimerRow.setOnClickListener {
             AlertDialog.Builder(this)
@@ -79,5 +95,24 @@ class SettingsActivity : AppCompatActivity() {
                 .setPositiveButton(R.string.ok, null)
                 .show()
         }
+    }
+
+    /** 通用 SeekBar 绑定：init 初始进度，fmt 格式化显示，onChange 写回设置 */
+    private fun bindSeekBar(
+        barId: Int, valId: Int,
+        init: Int, fmt: (Int) -> String, onChange: (Int) -> Unit
+    ) {
+        val bar = findViewById<SeekBar>(barId)
+        val label = findViewById<TextView>(valId)
+        bar.progress = init
+        label.text = fmt(init)
+        bar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(sb: SeekBar?, p: Int, fromUser: Boolean) {
+                label.text = fmt(p)
+                onChange(p)
+            }
+            override fun onStartTrackingTouch(sb: SeekBar?) {}
+            override fun onStopTrackingTouch(sb: SeekBar?) {}
+        })
     }
 }

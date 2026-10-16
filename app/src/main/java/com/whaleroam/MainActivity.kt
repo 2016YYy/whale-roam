@@ -7,6 +7,8 @@ import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -15,9 +17,11 @@ import android.view.Menu
 import android.view.MenuItem
 import android.view.inputmethod.EditorInfo
 import android.widget.Toast
+import androidx.appcompat.app.ActionBarDrawerToggle
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.core.location.LocationManagerCompat
 import com.whaleroam.data.HistoryStore
 import com.whaleroam.data.SettingsStore
 import com.whaleroam.databinding.ActivityMainBinding
@@ -68,6 +72,7 @@ class MainActivity : AppCompatActivity() {
         settings = SettingsStore(this)
         history = HistoryStore(this)
 
+        setupDrawer()
         setupMap()
         setupActions()
         requestPermissions()
@@ -75,6 +80,27 @@ class MainActivity : AppCompatActivity() {
         maybeAutoCheckUpdate()
 
         handleMapIntent(intent)
+    }
+
+    /** 侧边抽屉导航（对标 gogogo 侧边栏）：历史 / 设置 / 检查更新 / 免责声明 / 关于 */
+    private fun setupDrawer() {
+        val toggle = ActionBarDrawerToggle(
+            this, binding.drawerLayout, binding.toolbar,
+            R.string.app_name, R.string.app_name
+        )
+        binding.drawerLayout.addDrawerListener(toggle)
+        toggle.syncState()
+        binding.navView.setNavigationItemSelectedListener { item ->
+            when (item.itemId) {
+                R.id.nav_history -> startActivity(Intent(this, HistoryActivity::class.java))
+                R.id.nav_settings -> startActivity(Intent(this, SettingsActivity::class.java))
+                R.id.nav_update -> checkUpdate()
+                R.id.nav_disclaimer -> showDisclaimer()
+                R.id.nav_about -> showAbout()
+            }
+            binding.drawerLayout.closeDrawers()
+            true
+        }
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -172,6 +198,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun startMock() {
+        // 前置检查链（对标 gogogo doGoLocation）：模拟位置应用 -> GPS 开启 -> WiFi 干扰提醒
         if (!MockLocationEngine.canMock(this)) {
             AlertDialog.Builder(this)
                 .setTitle(R.string.disclaimer_title)
@@ -182,6 +209,20 @@ class MainActivity : AppCompatActivity() {
                 .setNegativeButton(R.string.cancel, null)
                 .show()
             return
+        }
+        val lm = getSystemService(android.location.LocationManager::class.java)
+        if (lm != null && !LocationManagerCompat.isLocationEnabled(lm)) {
+            AlertDialog.Builder(this)
+                .setMessage("检测到系统定位服务未开启，可能导致模拟定位无法生效。是否去开启？")
+                .setPositiveButton("去开启") { _, _ ->
+                    startActivity(Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS))
+                }
+                .setNegativeButton(R.string.cancel, null)
+                .show()
+            return
+        }
+        if (isWifiActive()) {
+            toast("WiFi 已开启，网络定位可能干扰模拟效果，建议关闭 WiFi 仅用流量")
         }
         val svc = Intent(this, MockLocationService::class.java).apply {
             action = MockLocationService.ACTION_START
@@ -194,6 +235,24 @@ class MainActivity : AppCompatActivity() {
         binding.startFab.text = getString(R.string.action_stop)
         binding.startFab.setIconResource(R.drawable.ic_stop)
         binding.statusText.text = getString(R.string.status_running, targetLat, targetLon)
+
+        // 启动模拟时自动记录定位历史（对标 gogogo recordCurrentLocation）：
+        // 先以坐标占位入库，再异步逆地理编码回填地址名称
+        val place = history.add("", targetLat, targetLon)
+        NominatimClient.reverse(targetLat, targetLon, object : NominatimClient.Callback<String> {
+            override fun onSuccess(address: String) {
+                history.updateLabel(place.id, address)
+            }
+            override fun onError(msg: String) { /* 失败保持坐标标签 */ }
+        })
+    }
+
+    /** WiFi 是否为当前活动网络（WiFi 扫描会干扰网络定位，导致定位闪回真实位置） */
+    private fun isWifiActive(): Boolean {
+        val cm = getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager ?: return false
+        val net = cm.activeNetwork ?: return false
+        val caps = cm.getNetworkCapabilities(net) ?: return false
+        return caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)
     }
 
     private fun stopMock() {
@@ -413,18 +472,20 @@ class MainActivity : AppCompatActivity() {
             .show()
     }
 
-    override fun onCreateOptionsMenu(menu: Menu?): Boolean {
-        menuInflater.inflate(R.menu.main_menu, menu)
-        return true
+    private fun showAbout() {
+        AlertDialog.Builder(this)
+            .setTitle(R.string.title_about)
+            .setMessage(getString(R.string.about_body, BuildConfig.VERSION_NAME))
+            .setPositiveButton(R.string.ok, null)
+            .show()
     }
 
-    override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        return when (item.itemId) {
-            R.id.menu_history -> { startActivity(Intent(this, HistoryActivity::class.java)); true }
-            R.id.menu_settings -> { startActivity(Intent(this, SettingsActivity::class.java)); true }
-            R.id.menu_update -> { checkUpdate(); true }
-            R.id.menu_disclaimer -> { showDisclaimer(); true }
-            else -> super.onOptionsItemSelected(item)
+    override fun onBackPressed() {
+        if (binding.drawerLayout.isDrawerOpen(binding.navView)) {
+            binding.drawerLayout.closeDrawers()
+        } else {
+            @Suppress("DEPRECATION")
+            super.onBackPressed()
         }
     }
 
