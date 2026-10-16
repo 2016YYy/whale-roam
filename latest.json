@@ -1,6 +1,6 @@
 {
-  "versionName": "1.2.0",
-  "versionCode": 3,
-  "changelog": "1.2.0 更新：\n- 新增：地图长按查询详细地址（设为此处 / 收藏此处 / 复制地址）\n- 新增：坐标输入支持 WGS-84 / GCJ-02 / BD-09 三坐标系自动换算\n- 新增：CloudDrive 风格检查更新窗口，对话框内嵌下载进度条与一键安装\n- 新增：设置页「检查更新」入口与当前版本显示\n- 变更：主界面 UI 重构（胶囊搜索栏 / 悬浮坐标卡 / 右下角启动按钮）\n- 变更：免责声明按钮改为「我同意 / 不同意」\n- 变更：启动检查更新无新版时增加吐司提示",
-  "apkUrl": "https://github.com/2016YYy/whale-roam/releases/download/v1.2.0/whale-roam-v1.2.0.apk"
+  "versionName": "1.3.0",
+  "versionCode": 4,
+  "changelog": "1.3.0 更新：\n- 新增：注入字段仿真（海拔/速度/方向角/GPS卫星数）+ 1 秒循环重注\n- 新增：随机偏移防检测（开关 + 半径可调）\n- 新增：走/跑/骑三档速度，摇杆悬浮窗档位切换按钮\n- 新增：启动前置检查链（模拟位置应用 / GPS 开启 / WiFi 干扰提醒）\n- 新增：启动模拟自动记录定位历史 + 异步回填地址名称\n- 新增：历史记录过期归档（默认 7 天可调）\n- 变更：主界面重构为侧边抽屉导航\n- 变更：设置页分组重构（注入仿真 / 三档速度 / 历史有效期）",
+  "apkUrl": "https://github.com/2016YYy/whale-roam/releases/download/v1.3.0/whale-roam-v1.3.0.apk"
 }
