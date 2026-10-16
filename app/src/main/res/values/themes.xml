@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.WhaleRoam" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/whale_primary</item>
+        <item name="colorPrimaryVariant">@color/whale_primary_dark</item>
+        <item name="colorOnPrimary">@color/whale_on_primary</item>
+        <item name="colorSecondary">@color/whale_accent</item>
+        <item name="android:statusBarColor">@color/whale_primary_dark</item>
+        <item name="android:windowBackground">@color/whale_bg</item>
+    </style>
+</resources>

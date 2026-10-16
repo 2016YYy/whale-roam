@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">鲸游</string>
+    <string name="app_name_en">WhaleRoam</string>
+    <string name="title_history">历史记录</string>
+    <string name="title_settings">设置</string>
+    <string name="title_about">关于鲸游</string>
+    <string name="action_start">启动模拟</string>
+    <string name="action_stop">停止模拟</string>
+    <string name="action_search">搜索地点</string>
+    <string name="action_save">收藏此位置</string>
+    <string name="action_joystick">开启悬浮摇杆</string>
+    <string name="action_check_update">检查更新</string>
+    <string name="hint_search">输入地名 / 经纬度，如：天安门 或 39.9087,116.3975</string>
+    <string name="hint_lat">纬度</string>
+    <string name="hint_lon">经度</string>
+    <string name="status_idle">未启动：在地图上选一个点，或搜索地点</string>
+    <string name="status_running">正在模拟：%1$.6f, %2$.6f</string>
+    <string name="status_need_mock_app">需要先在「开发者选项 → 选择模拟位置应用」中选择「鲸游」</string>
+    <string name="status_need_overlay">需要悬浮窗权限才能显示摇杆</string>
+    <string name="status_need_notification">需要通知权限才能显示下载进度</string>
+    <string name="service_mock_channel">模拟定位服务</string>
+    <string name="service_mock_running">鲸游正在模拟位置</string>
+    <string name="service_update_channel">更新下载</string>
+    <string name="service_downloading">正在下载更新 %1$s（%2$d%%）</string>
+    <string name="service_download_done">下载完成，点击安装</string>
+    <string name="service_download_failed">下载失败</string>
+    <string name="update_available">发现新版本 %1$s</string>
+    <string name="update_latest">已经是最新版本</string>
+    <string name="update_download">下载更新</string>
+    <string name="update_no_notes">暂无更新说明</string>
+    <string name="pref_speed">摇杆移动速度（米/秒）</string>
+    <string name="pref_accuracy">模拟定位精度（米）</string>
+    <string name="pref_disclaimer">免责声明</string>
+    <string name="pref_about">关于</string>
+    <string name="disclaimer_title">免责声明</string>
+    <string name="disclaimer_body">鲸游（WhaleRoam）是一款仅供学习 Android 定位原理与地图开发的开源工具。\n\n请勿将本软件用于：\n1. 任何考试、打卡、运动打卡类 App 的作弊行为；\n2. 任何违反法律法规、侵犯他人权益的用途；\n3. 任何可能破坏平台公平性的游戏行为。\n\n因使用本软件产生的一切后果由使用者自行承担，开发者不承担任何责任。继续使用即表示您已阅读并同意本声明。</string>
+    <string name="about_body">鲸游 WhaleRoam %1$s\n基于 Android 调试 API 与 OpenStreetMap 开源实现。\n本项目与「影梭 GoGoGo」无任何代码关联，为独立 clean-room 重写。\n仓库：https://github.com/2016YYy/whale-roam</string>
+    <string name="confirm_stop_title">停止模拟？</string>
+    <string name="confirm_stop_msg">停止后将恢复真实定位。</string>
+    <string name="ok">确定</string>
+    <string name="cancel">取消</string>
+    <string name="save">保存</string>
+    <string name="delete">删除</string>
+</resources>

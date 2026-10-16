@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="whale_primary">#1565C0</color>
+    <color name="whale_primary_dark">#0D47A1</color>
+    <color name="whale_accent">#42A5F5</color>
+    <color name="whale_bg">#F5F9FF</color>
+    <color name="whale_surface">#FFFFFF</color>
+    <color name="whale_on_primary">#FFFFFF</color>
+    <color name="whale_danger">#D32F2F</color>
+    <color name="whale_join">#1E88E5</color>
+    <color name="black">#000000</color>
+    <color name="white">#FFFFFF</color>
+</resources>
