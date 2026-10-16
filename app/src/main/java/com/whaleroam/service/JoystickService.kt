@@ -1,9 +1,12 @@
 package com.whaleroam.service
 
+import android.app.Notification
 import android.app.Service
 import android.content.Context
 import android.content.Intent
+import android.content.pm.ServiceInfo
 import android.graphics.PixelFormat
+import android.os.Build
 import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
@@ -12,6 +15,9 @@ import android.view.MotionEvent
 import android.view.View
 import android.view.WindowManager
 import android.widget.FrameLayout
+import androidx.core.app.NotificationCompat
+import com.whaleroam.R
+import com.whaleroam.WhaleRoamApp
 import com.whaleroam.data.SettingsStore
 import kotlin.math.cos
 import kotlin.math.hypot
@@ -38,10 +44,30 @@ class JoystickService : Service() {
 
     override fun onCreate() {
         super.onCreate()
+        // Android 8+ 要求 startForegroundService 启动的服务必须及时调用 startForeground，
+        // 否则会抛 ForegroundServiceDidNotStartInTimeException 导致崩溃。
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            startForeground(
+                WhaleRoamApp.NOTIF_JOYSTICK_ID,
+                buildNotification(),
+                ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE
+            )
+        } else {
+            startForeground(WhaleRoamApp.NOTIF_JOYSTICK_ID, buildNotification())
+        }
         wm = getSystemService(Context.WINDOW_SERVICE) as WindowManager
         settings = SettingsStore(this)
         showOverlay()
         ticker.postDelayed(tickRunnable, TICK_MS)
+    }
+
+    private fun buildNotification(): Notification {
+        return NotificationCompat.Builder(this, WhaleRoamApp.CHANNEL_JOYSTICK)
+            .setContentTitle(getString(R.string.app_name))
+            .setContentText(getString(R.string.service_joystick_running))
+            .setSmallIcon(R.drawable.ic_whale_notif)
+            .setOngoing(true)
+            .build()
     }
 
     private fun showOverlay() {
@@ -121,6 +147,7 @@ class JoystickService : Service() {
         ticker.removeCallbacks(tickRunnable)
         rootView?.let { runCatching { wm.removeView(it) } }
         rootView = null
+        stopForeground(STOP_FOREGROUND_REMOVE)
         super.onDestroy()
     }
 
