@@ -11,6 +11,7 @@ import androidx.core.app.NotificationCompat
 import androidx.core.content.FileProvider
 import com.whaleroam.R
 import com.whaleroam.WhaleRoamApp
+import com.whaleroam.util.ApkSignatureChecker
 import java.io.File
 import java.io.FileOutputStream
 import java.net.HttpURLConnection
@@ -32,7 +33,12 @@ class UpdateDownloadService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
-            ACTION_CANCEL -> { cancelled = true; stopSelf(); return START_NOT_STICKY }
+            ACTION_CANCEL -> {
+                cancelled = true
+                stopForeground(STOP_FOREGROUND_REMOVE)
+                stopSelf()
+                return START_NOT_STICKY
+            }
             else -> {
                 val url = intent?.getStringExtra(EXTRA_URL)
                 val verName = intent?.getStringExtra(EXTRA_VERSION_NAME) ?: ""
@@ -88,6 +94,16 @@ class UpdateDownloadService : Service() {
         }
     }
 
+    private fun cancelPendingIntent(): PendingIntent {
+        val cancelIntent = Intent(this, UpdateDownloadService::class.java).apply {
+            action = ACTION_CANCEL
+        }
+        return PendingIntent.getService(
+            this, 1, cancelIntent,
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+        )
+    }
+
     private fun notifyProgress(versionName: String, pct: Int) {
         val n = NotificationCompat.Builder(this, WhaleRoamApp.CHANNEL_UPDATE)
             .setContentTitle(getString(R.string.app_name))
@@ -95,6 +111,7 @@ class UpdateDownloadService : Service() {
             .setSmallIcon(R.drawable.ic_whale_notif)
             .setProgress(100, pct, pct < 0)
             .setOngoing(true)
+            .addAction(0, getString(R.string.update_cancel), cancelPendingIntent())
             .build()
         nm().notify(WhaleRoamApp.NOTIF_UPDATE_ID, n)
     }
@@ -106,10 +123,18 @@ class UpdateDownloadService : Service() {
             .setSmallIcon(R.drawable.ic_whale_notif)
             .setProgress(100, pct, true)
             .setOngoing(true)
+            .addAction(0, getString(R.string.update_cancel), cancelPendingIntent())
             .build()
     }
 
     private fun done(apk: File, versionName: String) {
+        if (cancelled) { apk.delete(); stopSelf(); return }
+        // 统一签名校验：安装包签名必须与当前应用一致，否则拒绝安装并提示
+        if (!ApkSignatureChecker.matchesInstalledApp(this, apk)) {
+            apk.delete()
+            fail(getString(R.string.update_signature_mismatch))
+            return
+        }
         val uri: Uri = FileProvider.getUriForFile(this, "${packageName}.fileprovider", apk)
         val installIntent = Intent(Intent.ACTION_VIEW).apply {
             setDataAndType(uri, "application/vnd.android.package-archive")

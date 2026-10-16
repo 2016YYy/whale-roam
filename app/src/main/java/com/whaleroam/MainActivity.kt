@@ -60,6 +60,8 @@ class MainActivity : AppCompatActivity() {
         setupMap()
         setupActions()
         requestPermissions()
+        ensureDisclaimerAccepted()
+        maybeAutoCheckUpdate()
 
         intent?.let {
             val lat = it.getDoubleExtra("extra_lat", Double.NaN)
@@ -164,6 +166,15 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun stopMock() {
+        AlertDialog.Builder(this)
+            .setTitle(R.string.confirm_stop_title)
+            .setMessage(R.string.confirm_stop_msg)
+            .setPositiveButton(R.string.action_stop) { _, _ -> doStopMock() }
+            .setNegativeButton(R.string.cancel, null)
+            .show()
+    }
+
+    private fun doStopMock() {
         val svc = Intent(this, MockLocationService::class.java).apply {
             action = MockLocationService.ACTION_STOP
         }
@@ -197,7 +208,7 @@ class MainActivity : AppCompatActivity() {
         } else {
             ContextCompat.startForegroundService(this, svc)
             JoystickToggle.visible = true
-            binding.joystickBtn.text = "关闭摇杆"
+            binding.joystickBtn.text = getString(R.string.action_joystick_stop)
         }
     }
 
@@ -246,7 +257,8 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun checkUpdate() {
-        toast("正在检查更新…")
+        toast(getString(R.string.update_checking))
+        settings.lastUpdateCheckAt = System.currentTimeMillis()
         UpdateManager.check(this, BuildConfig.VERSION_CODE, object : UpdateManager.Callback {
             override fun onNeedUpdate(info: UpdateInfo) {
                 runOnUiThread { showUpdateDialog(info) }
@@ -254,6 +266,34 @@ class MainActivity : AppCompatActivity() {
             override fun onLatest() { runOnUiThread { toast(getString(R.string.update_latest)) } }
             override fun onError(msg: String) { runOnUiThread { toast("检查失败：$msg") } }
         })
+    }
+
+    /** 启动时自动检查更新：默认 24 小时最多一次，静默进行，发现新版本才弹窗 */
+    private fun maybeAutoCheckUpdate() {
+        val intervalMs = 24 * 60 * 60 * 1000L
+        if (System.currentTimeMillis() - settings.lastUpdateCheckAt < intervalMs) return
+        settings.lastUpdateCheckAt = System.currentTimeMillis()
+        UpdateManager.check(this, BuildConfig.VERSION_CODE, object : UpdateManager.Callback {
+            override fun onNeedUpdate(info: UpdateInfo) {
+                runOnUiThread { showUpdateDialog(info) }
+            }
+            override fun onLatest() {}
+            override fun onError(msg: String) {}
+        })
+    }
+
+    /** 首次启动必须阅读并同意免责声明，否则不能使用本软件 */
+    private fun ensureDisclaimerAccepted() {
+        if (settings.disclaimerAccepted) return
+        AlertDialog.Builder(this)
+            .setTitle(R.string.disclaimer_title)
+            .setMessage(R.string.disclaimer_body)
+            .setCancelable(false)
+            .setPositiveButton(R.string.disclaimer_agree) { _, _ ->
+                settings.disclaimerAccepted = true
+            }
+            .setNegativeButton(R.string.disclaimer_exit) { _, _ -> finish() }
+            .show()
     }
 
     private fun showUpdateDialog(info: UpdateInfo) {
