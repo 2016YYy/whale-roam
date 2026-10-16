@@ -1,0 +1,6 @@
+{
+  "versionName": "1.0.0",
+  "versionCode": 1,
+  "changelog": "首次发布：\n- 虚拟定位（地图选点/搜索/经纬度输入）\n- 悬浮摇杆连续漂移\n- 历史收藏\n- 应用内更新（带进度条、可后台）",
+  "apkUrl": "https://github.com/2016YYy/whale-roam/releases/download/v1.0.0/whale-roam-v1.0.0.apk"
+}
