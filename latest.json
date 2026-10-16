@@ -1,6 +1,6 @@
 {
-  "versionName": "1.1.0",
-  "versionCode": 2,
-  "changelog": "1.1.0 更新：\n- 新增：首次启动免责声明同意（必须同意才能使用）\n- 新增：启动时自动检查更新（24 小时一次，静默检测）\n- 新增：下载通知支持取消，可清理残缺文件\n- 新增：更新安装前统一签名校验，签名不符拒绝安装\n- 修复：开启悬浮摇杆必崩的问题（前台服务类型缺失）\n- 修复：停止模拟新增二次确认，防误触",
-  "apkUrl": "https://github.com/2016YYy/whale-roam/releases/download/v1.1.0/whale-roam-v1.1.0.apk"
+  "versionName": "1.2.0",
+  "versionCode": 3,
+  "changelog": "1.2.0 更新：\n- 新增：地图长按查询详细地址（设为此处 / 收藏此处 / 复制地址）\n- 新增：坐标输入支持 WGS-84 / GCJ-02 / BD-09 三坐标系自动换算\n- 新增：CloudDrive 风格检查更新窗口，对话框内嵌下载进度条与一键安装\n- 新增：设置页「检查更新」入口与当前版本显示\n- 变更：主界面 UI 重构（胶囊搜索栏 / 悬浮坐标卡 / 右下角启动按钮）\n- 变更：免责声明按钮改为「我同意 / 不同意」\n- 变更：启动检查更新无新版时增加吐司提示",
+  "apkUrl": "https://github.com/2016YYy/whale-roam/releases/download/v1.2.0/whale-roam-v1.2.0.apk"
 }
