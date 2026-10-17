@@ -37,6 +37,28 @@
 
 - 应用内更新在唤起安装前会校验安装包签名与当前应用一致（见 `util/ApkSignatureChecker.kt`），签名不符将拒绝安装。
 
+### 2.1 签名历史（如实记录）
+
+| 版本 | 签名证书 SHA-256 | 证书 DN | 状态 |
+| --- | --- | --- | --- |
+| v1.0.0（原始资产） | `f0e26e8c684fca404db42fa0b27e53cb01bbb2404816e914f482ddf80054947b` | `CN=WhaleRoam, O=OpenSource, C=CN` | ❌ 早期临时密钥，已废弃 |
+| v1.0.0（2026-10-17 重签后） | `137d9f9cb8330b4b36872ab5e5054b6fe9e162c85717994e5fabab43a9e3ad5c` | `CN=WhaleRoam, OU=WhaleRoam, O=WhaleRoam, C=CN` | ✅ 当前资产 |
+| v1.1.0 ~ v1.4.0 | 同上 | 同上 | ✅ |
+
+> **历史事实**：v1.0.0 首次发布时误用了早期临时密钥，导致它无法直接覆盖升级到 v1.1.0+。该临时密钥已不在任何本地密钥库中，无法复现，因此 2026-10-17 将 v1.0.0 的 Release 资产用统一发布密钥重新签名，使 5 个版本的证书指纹完全一致。重签前已备份原始资产（`_backup\2026-10-17-191500\release-assets\`）。
+
+### 2.2 重签已有资产（仅在签名事故时使用）
+
+> ⚠️ 重签会改变 APK 的字节内容，已安装旧包的设备**仍无法**用新包覆盖升级（签名由安装时校验，与下载时的包无关）。重签只解决「新下载用户能否顺滑升级」的问题，不能修复已安装用户的升级路径。
+
+```bash
+apksigner sign --ks whale-roam-release.jks --ks-pass pass:<storePassword> \
+  --ks-key-alias whaleroam --key-pass pass:<keyPassword> \
+  --out whale-roam-vX.Y.Z-resigned.apk whale-roam-vX.Y.Z.apk
+```
+
+重签后必须：① 用 `apksigner verify --print-certs` 确认指纹为 `137d9f9c…`；② 删除 Release 上的旧资产再上传新资产（GitHub 不允许同名资产并存）；③ 在 Release 正文的「安装说明」里注明重签事实。
+
 ## 3. 发版流程（Checklist）
 
 1. **合码**：确认 `main` 分支包含本次全部变更，CI/本地构建通过。
@@ -52,18 +74,63 @@
    ```
 
    产物位于 `app/build/outputs/apk/release/`，重命名为 `whale-roam-v<版本号>.apk`。
-5. **推送 Tag**：`git tag v<版本号> && git push origin v<版本号>`。
-6. **建 Release**：在 GitHub Releases 页面基于该 Tag 发布，标题 `鲸游 WhaleRoam v<版本号>`，正文直接粘贴 CHANGELOG 对应段落，并上传签名 APK。
+5. **推送 Tag**：**必须使用附注标签（annotated tag）**，不要用轻量标签，以便 Tag 本身携带发版说明：
+
+   ```bash
+   git tag -a v<版本号> -m "鲸游 WhaleRoam v<版本号>: <一句话要点>"
+   git push origin v<版本号>
+   ```
+
+   > 历史遗留：v1.0.0 与 v1.4.0 曾用轻量标签，已于 2026-10-17 重建为附注标签（v1.4.0 同时前移，使 Tag 内容包含校正后的 CHANGELOG）。
+6. **建 Release**：基于该 Tag 发布，标题 `鲸游 WhaleRoam v<版本号>`，正文**严格按第 4 节的统一模板**撰写（不要直接粘贴 CHANGELOG 段落——CHANGELOG 用 `### 新增/变更/修复` 的分类，Release 正文另需「安装说明」与 CHANGELOG 链接），并上传签名 APK。
+
+   正文草稿放在 `release/RELEASE_BODY.md`，然后用 `python tools/release.py --version <x.y.z> --code <n>` 一键建 Tag / Release / 上传资产。
 7. **更新 latest.json**：将 `versionName` / `versionCode` / `changelog` / `apkUrl` 更新为新版本（`apkUrl` 指向刚上传的 APK 下载地址），提交并推送——应用内更新即以此文件为准。
 8. **自检**：用旧版本 App 手动点「检查更新」，确认能发现新版本、下载进度正常、签名校验通过、可覆盖安装。
 
 ## 4. Release 说明（更新日志）写法
 
-Release 正文 = CHANGELOG 对应版本段，遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 六分类：
+Release 正文**统一使用以下模板**，五个历史版本已于 2026-10-17 全部按此模板重写，后续必须保持一致：
 
-- **新增（Added）**：新功能，动词开头，如「新增：xxx」；
-- **变更（Changed）**：已有行为的变化；
-- **修复（Fixed）**：具体描述了修复了什么问题、在什么场景触发，避免写「修复若干 bug」这类空话；
+```markdown
+## <版本号> 更新说明
+
+> <可选：一句话背景，如「依据 XX 报告对标补齐」>
+
+### 新增
+- 🎯 **<功能名>**：<一句话说明，讲清「做了什么」与「为什么」>
+
+### 变更
+- 🎨 **<变更点>**：<原行为 → 新行为>
+
+### 修复
+- 🐛 **<问题名>**：<触发场景 + 现象 + 现在的处理>
+
+### 安装说明
+1. 下载 `whale-roam-v<版本号>.apk` 安装（Android 8.0 及以上）
+2. <签名说明：与哪些版本同签名、能否直接覆盖升级>
+3. <升级路径：应用内检查更新 / 需卸载重装>
+
+完整变更历史见 [CHANGELOG.md](https://github.com/2016YYy/whale-roam/blob/main/CHANGELOG.md)。
+```
+
+### 4.1 格式硬性规则
+
+| 规则 | 说明 |
+| --- | --- |
+| 一级标题 | 固定 `## <版本号> 更新说明`，**不要**写「首次发布」「新版本来了」这类自由文案 |
+| 分节标题 | 纯文本 `### 新增 / ### 变更 / ### 修复 / ### 移除 / ### 安全`，**不加 emoji** |
+| 条目格式 | 统一 `- <emoji> **<名称>**：<说明>`，emoji 只用来表达类别（🎯 功能 / 🎨 UI / 🐛 修复 / 🔢 版本 / 🔏 签名），不作装饰 |
+| 修复条目 | 正文**不要**再重复「修复」二字（分节标题已表明），直接写问题与现象 |
+| 安装说明 | **每个版本都必须有**，固定三行结构（下载 / 签名 / 升级路径） |
+| 结尾链接 | **每个版本都必须有** CHANGELOG 链接，指向仓库 main 分支 |
+| 长度 | 单条不超过两行，避免大段文字；面向用户，不堆砌 Git 提交信息 |
+
+### 4.2 分类写法（遵循 Keep a Changelog）
+
+- **新增（Added）**：新功能，动词开头；
+- **变更（Changed）**：已有行为的变化，写成「原行为 → 新行为」；
+- **修复（Fixed）**：写清触发场景 + 现象 + 现在的处理，避免「修复若干 bug」这类空话；
 - **移除（Removed）** / **安全（Security）** / **弃用（Deprecated）**：按需使用。
 
 反面示例 → 正面示例：
@@ -74,7 +141,14 @@ Release 正文 = CHANGELOG 对应版本段，遵循 [Keep a Changelog](https://k
 | 优化更新体验 | 下载通知新增「取消下载」按钮，取消后自动清理残缺文件 |
 | 更新依赖 | 升级 osmdroid 至 6.1.18，修复部分瓦片加载失败 |
 
-## 5. 文档结构约定
+### 4.3 发版后自检
+
+```bash
+python tools/verify_release_consistency.py
+```
+
+该脚本会校验：① 所有 Release 资产签名证书指纹是否一致；② 资产 versionCode / versionName 是否与 Tag、latest.json 一致；③ Release 正文是否符合本节模板；④ 是否全部为附注标签。
+## 6. 文档结构约定
 
 - `README.md`：项目门面——简介、徽章、免责声明、功能、使用、构建、更新机制、FAQ、贡献、协议；
 - `CHANGELOG.md`：面向用户的完整变更史；
