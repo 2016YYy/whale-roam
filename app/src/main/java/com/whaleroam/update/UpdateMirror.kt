@@ -53,16 +53,20 @@ object UpdateMirror {
         "https://cdn.jsdelivr.net/gh/$OWNER/$REPO@$BRANCH/latest.json"
 
     /**
-     * latest.json 源列表：直连 + ghfast.top / gh-proxy.com / ghproxy.net / moeyy.xyz
+     * latest.json 源列表：直连 + ghfast.top / gh-proxy.com / ghproxy.net / ghproxy.cc
      * 四种镜像包装 + cdn.jsdelivr.net，共 6 个源。
      * 顺序同时是全部失败时的兜底顺序，后续增删镜像只改这张表。
+     *
+     * 2026-10-17 实测：原列表中的 moeyy.xyz 及其关联域名（github.moeyy.xyz）
+     * 对 latest.json 与 APK 均返回 404 / 连接超时，已替换为实测可用的 ghproxy.cc。
+     * 增删镜像前请先用 tools/audit/probe_mirrors.py 实测一次。
      */
     val LATEST_JSON_SOURCES: List<String> = listOf(
         RAW_LATEST_URL,
         "https://ghfast.top/$RAW_LATEST_URL",
         "https://gh-proxy.com/$RAW_LATEST_URL",
         "https://ghproxy.net/$RAW_LATEST_URL",
-        "https://moeyy.xyz/$RAW_LATEST_URL",
+        "https://ghproxy.cc/$RAW_LATEST_URL",
         JSDELIVR_LATEST_URL
     )
 
@@ -80,7 +84,7 @@ object UpdateMirror {
             "https://ghfast.top/$url",
             "https://gh-proxy.com/$url",
             "https://ghproxy.net/$url",
-            "https://moeyy.xyz/$url"
+            "https://ghproxy.cc/$url"
         )
     }
 
