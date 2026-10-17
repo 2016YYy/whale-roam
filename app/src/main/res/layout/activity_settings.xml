@@ -22,13 +22,13 @@
                     <SeekBar android:id="@+id/accBar" android:layout_width="match_parent" android:layout_height="wrap_content" android:max="50" />
                     <TextView android:id="@+id/accVal" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="10 m" />
 
-                    <View android:layout_width="match_parent" android:layout_height="1dp" android:layout_marginVertical="12dp" android:background="#EEEEEE" />
+                    <View android:layout_width="match_parent" android:layout_height="1dp" android:layout_marginVertical="12dp" android:background="@color/soft_divider" />
                     <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
                         android:text="注入海拔（米）" android:textStyle="bold" />
                     <SeekBar android:id="@+id/altBar" android:layout_width="match_parent" android:layout_height="wrap_content" android:max="500" />
                     <TextView android:id="@+id/altVal" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="55 m" />
 
-                    <View android:layout_width="match_parent" android:layout_height="1dp" android:layout_marginVertical="12dp" android:background="#EEEEEE" />
+                    <View android:layout_width="match_parent" android:layout_height="1dp" android:layout_marginVertical="12dp" android:background="@color/soft_divider" />
                     <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
                         android:orientation="horizontal" android:gravity="center_vertical">
                         <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
@@ -81,6 +81,40 @@
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
+            <!-- 外观：主题模式 + 8 套种子色（v1.5.0） -->
+            <com.google.android.material.card.MaterialCardView android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:layout_margin="12dp" android:layout_marginBottom="0dp" app:cardElevation="2dp" app:cardCornerRadius="14dp">
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:orientation="vertical" android:padding="16dp">
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:text="@string/theme_group_title" android:textStyle="bold" android:textSize="15sp"
+                        android:textColor="@color/whale_primary_dark" />
+
+                    <!-- 主题模式：跟随系统 / 浅色 / 深色 -->
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp" android:text="@string/theme_mode_title" android:textStyle="bold" />
+                    <TextView android:id="@+id/themeModeRow" android:layout_width="match_parent" android:layout_height="wrap_content"
+                        android:paddingVertical="10dp" android:textSize="14sp" android:background="?attr/selectableItemBackground"
+                        android:drawableEnd="@drawable/ic_dpad" android:text="@string/theme_mode_follow" />
+                    <TextView android:id="@+id/themeModeValue" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:textSize="12sp" android:textColor="@color/soft_text_hint" android:visibility="gone" />
+
+                    <View android:layout_width="match_parent" android:layout_height="1dp" android:layout_marginVertical="12dp"
+                        android:background="@color/soft_divider" />
+
+                    <!-- 8 套种子色：代码里动态 addView，这里只给容器 -->
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:text="@string/theme_seed_title" android:textStyle="bold" />
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp" android:text="@string/theme_seed_hint"
+                        android:textSize="11sp" android:textColor="@color/soft_text_hint" />
+                    <HorizontalScrollView android:layout_width="match_parent" android:layout_height="wrap_content"
+                        android:layout_marginTop="10dp" android:scrollbars="none">
+                        <LinearLayout android:id="@+id/themeSeedContainer" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                            android:orientation="horizontal" android:gravity="center_vertical" />
+                    </HorizontalScrollView>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
             <!-- 关于 -->
             <com.google.android.material.card.MaterialCardView android:layout_width="match_parent" android:layout_height="wrap_content"
                 android:layout_marginHorizontal="12dp" android:layout_marginBottom="12dp" app:cardElevation="2dp" app:cardCornerRadius="14dp">
@@ -89,15 +123,15 @@
                     <TextView android:id="@+id/rowCheckUpdate" android:layout_width="match_parent" android:layout_height="wrap_content"
                         android:padding="12dp" android:text="@string/pref_check_update" android:textSize="16sp"
                         android:textColor="@color/whale_primary_dark" />
-                    <View android:layout_width="match_parent" android:layout_height="1dp" android:background="#EEEEEE" />
+                    <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/soft_divider" />
                     <TextView android:id="@+id/rowDisclaimer" android:layout_width="match_parent" android:layout_height="wrap_content"
                         android:padding="12dp" android:text="@string/pref_disclaimer" android:textSize="16sp" />
-                    <View android:layout_width="match_parent" android:layout_height="1dp" android:background="#EEEEEE" />
+                    <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/soft_divider" />
                     <TextView android:id="@+id/rowAbout" android:layout_width="match_parent" android:layout_height="wrap_content"
                         android:padding="12dp" android:text="@string/pref_about" android:textSize="16sp" />
-                    <View android:layout_width="match_parent" android:layout_height="1dp" android:background="#EEEEEE" />
+                    <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/soft_divider" />
                     <TextView android:id="@+id/versionText" android:layout_width="match_parent" android:layout_height="wrap_content"
-                        android:padding="12dp" android:textSize="13sp" android:textColor="#888888" />
+                        android:padding="12dp" android:textSize="13sp" android:textColor="@color/soft_text_hint" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
         </LinearLayout>

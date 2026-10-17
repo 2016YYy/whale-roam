@@ -8,6 +8,6 @@
         <TextView android:id="@+id/placeLabel" android:layout_width="match_parent" android:layout_height="wrap_content"
             android:textSize="15sp" android:textStyle="bold" />
         <TextView android:id="@+id/placeCoord" android:layout_width="match_parent" android:layout_height="wrap_content"
-            android:textSize="12sp" android:textColor="#666666" />
+            android:textSize="12sp" android:textColor="@color/soft_text_secondary" />
     </LinearLayout>
 </com.google.android.material.card.MaterialCardView>

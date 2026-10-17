@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- v1.5.0 免责声明弹窗专属文案（disclaimer_ 前缀）。
+         标题 / 同意 / 不同意复用 strings.xml 已有的 disclaimer_title / disclaimer_agree / disclaimer_exit，
+         此处只新增逐条条款等 key，避免重复定义。 -->
+
+    <!-- 弹窗简介（替代原来 disclaimer_body 的一整段文字） -->
+    <string name="disclaimer_intro">鲸游（WhaleRoam）是一款仅供学习 Android 定位原理与地图开发的开源工具。在开始使用前，请仔细阅读并同意以下条款：</string>
+
+    <!-- 勾选框文案（首次启动强制态显示） -->
+    <string name="disclaimer_accept_label">我已阅读并同意以上条款</string>
+
+    <!-- 只读态（设置页 / 抽屉入口）按钮，只关闭弹窗，不影响已同意状态 -->
+    <string name="disclaimer_close">关闭</string>
+
+    <!-- 逐条条款：编号已在文案内，与下方说明一一对应（scope 第二章要求的 6 条） -->
+    <string name="disclaimer_clause_1">1. 学习与研究用途限定</string>
+    <string name="disclaimer_clause_1_note">本软件仅用于学习、研究 Android 定位原理与地图开发技术，请勿将其用于任何商业用途或与学习研究无关的场景。</string>
+
+    <string name="disclaimer_clause_2">2. 禁止用于考试、打卡、运动打卡等作弊行为</string>
+    <string name="disclaimer_clause_2_note">禁止在各类考试、签到、打卡、运动计步、位置签到等场景中伪造或修改位置信息。</string>
+
+    <string name="disclaimer_clause_3">3. 禁止用于违反法律法规、侵犯他人权益的用途</string>
+    <string name="disclaimer_clause_3_note">禁止将本软件用于追踪、定位他人，或从事任何违反当地法律法规、侵犯他人合法权益的行为。</string>
+
+    <string name="disclaimer_clause_4">4. 禁止用于破坏平台公平性的游戏行为</string>
+    <string name="disclaimer_clause_4_note">禁止在各类游戏、竞赛或活动中通过修改位置获取不当优势，破坏平台公平性。</string>
+
+    <string name="disclaimer_clause_5">5. 不保证可用性，不对使用后果承担责任</string>
+    <string name="disclaimer_clause_5_note">本软件按「现状」提供，不对其可用性、稳定性与准确性作任何担保；因使用本软件产生的一切后果由使用者自行承担，开发者不承担任何责任。</string>
+
+    <string name="disclaimer_clause_6">6. 请从官方 Releases 获取安装包</string>
+    <string name="disclaimer_clause_6_note">请仅从 GitHub 官方 Releases 页面获取安装包，不要使用来源不明的修改版本，以免账号与设备安全受到侵害。</string>
+</resources>

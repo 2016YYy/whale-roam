@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    v1.5.0 深色模式颜色覆盖（values-night）。
+    布局里写死的浅色（#EEEEEE 分隔线、#666666/#999999 文字、#FFFFFF 卡片底）
+    第一步先改为引用这里的资源；对不在本次归属内的其他布局，提供同名 alias
+    让它们至少在深色下不会「白底白字」，具体见给 Lead 的报告。
+-->
+<resources>
+
+    <color name="seed_divider">#383B40</color>
+    <color name="seed_text_hint">#9AA0A6</color>
+    <color name="seed_surface">#1E2024</color>
+    <color name="seed_surface_variant">#26282D</color>
+    <color name="seed_bg">#121316</color>
+    <color name="seed_on_surface">#E4E6E9</color>
+    <color name="seed_on_surface_variant">#AEB4BA</color>
+    <color name="seed_outline">#3A3D42</color>
+
+    <!-- 历史别名同步深色化：早期布局/代码引用 whale_*，night 下改为深色底，避免浅色残留 -->
+    <color name="whale_bg">#121316</color>
+    <color name="whale_surface">#1E2024</color>
+
+    <!-- 通用可复用深色色值（不依赖种子色） -->
+    <color name="soft_divider">#383B40</color>
+    <color name="soft_text_secondary">#AEB4BA</color>
+    <color name="soft_text_hint">#9AA0A6</color>
+
+</resources>

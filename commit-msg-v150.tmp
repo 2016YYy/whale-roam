@@ -1,0 +1,47 @@
+feat: v1.5.0 主题系统（8 套种子色 + 三档模式）+ 勾选式免责声明 + 镜像加速更新
+
+主题（对应需求：8 套主题种子色 + 跟随系统/浅色/深色三档模式）：
+- 新增 util/ThemeSeed.kt：8 套种子色定义与 ThemeOverlay 应用，深浅色均由
+  AppCompatDelegate.setDefaultNightMode 统一处理
+- 新增 ui/ThemeMode.kt：落库整型与 AppCompatDelegate 夜间模式常量的映射
+- colors.xml 补 8 套 seed_* 四组色值，保留 whale_* 历史别名（升级用户无感知）
+- themes.xml 增加 8 个 Theme.WhaleRoam.Seed.* 覆盖层；values-night 只覆盖基础色
+- DrawableFactory 全部增加带 seedId 的重载，原签名保留（老调用方零改动），
+  悬浮摇杆配色跟随当前主题
+- SettingsActivity 新增「外观」分组：主题模式单选 + 8 色块横向选择器
+- WhaleRoamApp 在 onCreate 应用主题模式，避免冷启动「先浅后深」闪烁
+- MainActivity / RouteActivity / HistoryActivity / SettingsActivity 均在
+  setContentView 前应用种子色覆盖层
+- 布局里写死的 #EEEEEE / #666666 / #888888 / #999999 收拢为 soft_* 资源，
+  深色模式下不再出现白底白字
+
+合规（对应需求：免责声明勾选式 + 逐条条款 + 不同意退出）：
+- 新增 ui/DisclaimerDialog.kt：强制态与只读态彻底分离
+  * 强制态：未勾选时「同意」按钮 disabled 且半透明；点「不同意」、
+    按返回键、点对话框外部一律 finish() 退出应用
+  * 只读态：隐藏勾选行，只提供「关闭」，不写 disclaimerAccepted
+- 新增 dialog_disclaimer.xml + strings_disclaimer.xml：6 条编号条款
+  （学习研究 / 禁考试打卡作弊 / 禁违法违规 / 禁破坏公平性 / 不担责 / 官方渠道），
+  弹窗可滚动
+- MainActivity.ensureDisclaimerAccepted 与 showDisclaimer 改走 DisclaimerDialog；
+  SettingsActivity 的 rowDisclaimer 入口改为只读态
+
+更新加速（对应需求：多源并发 + 测速 + 自动切换 + 显示线路域名）：
+- 新增 update/UpdateMirror.kt：
+  * 6 个 latest.json 源（直连 + ghfast.top / gh-proxy.com / ghproxy.net /
+    moeyy.xyz 四种镜像包装 + cdn.jsdelivr.net）
+  * fetchLatestJsonConcurrently：并发请求谁先成功用谁，AtomicBoolean 保证只回调一次，
+    单源超时 6s，全部失败才回调 onError
+  * pickFastestMirror：并发探测候选 APK 地址（HEAD 失败自动降级 Range），
+    选最快；全部失败回退首个候选
+  * hostOf：从 URL 提取域名供「当前线路」展示
+- UpdateManager 改为走 UpdateMirror，命中域名记入 UpdateInfo.mirror
+- UpdateInfo 增加 mirror 字段
+- UpdateDownloadService 重写下载流程：测速选线路 → 失败自动切下一个候选 →
+  HTTP Range 断点续传（206 续传 / 200 全量覆盖，含大小校验）→ 最多重试 2 次；
+  每次切换通过 UpdateBus.Event.MirrorChanged 上报
+- UpdateBus 新增 MirrorChanged 事件
+- UpdateDialog 进度旁新增 updateMirrorLine 显示「当前线路：域名」
+- dialog_update.xml 新增 updateMirrorLine；strings_mirror.xml 新增 mirror_ 前缀文案
+
+版本：versionCode 6 / versionName 1.5.0

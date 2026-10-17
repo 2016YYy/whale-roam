@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    v1.5.0 主题（深色 / values-night）。
+    只覆盖 background / surface / on-surface / 分隔线相关的基础色与主题属性，
+    种子色 8 套共用 values 版（深色下同样成立，不再为每套种子色各写一份深色）。
+-->
+<resources>
+
+    <style name="Theme.WhaleRoam" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/seed_primary</item>
+        <item name="colorPrimaryVariant">@color/seed_primary_dark</item>
+        <item name="colorOnPrimary">@color/seed_on_primary</item>
+        <item name="colorSecondary">@color/seed_accent</item>
+        <item name="colorSecondaryVariant">@color/seed_primary_dark</item>
+        <item name="colorOnSecondary">@color/seed_on_primary</item>
+        <item name="colorSurface">@color/seed_surface</item>
+        <item name="colorOnSurface">@color/seed_on_surface</item>
+        <item name="colorSurfaceVariant">@color/seed_surface_variant</item>
+        <item name="colorOnSurfaceVariant">@color/seed_on_surface_variant</item>
+        <item name="colorOutline">@color/seed_outline</item>
+        <item name="android:colorBackground">@color/seed_bg</item>
+        <item name="android:statusBarColor">@color/seed_primary_dark</item>
+        <item name="android:windowBackground">@color/seed_bg</item>
+        <!-- 深色模式：状态栏/导航栏图标用浅色 -->
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowLightNavigationBar">false</item>
+    </style>
+
+</resources>

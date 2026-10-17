@@ -13,6 +13,8 @@ import androidx.recyclerview.widget.RecyclerView
 import com.whaleroam.MainActivity
 import com.whaleroam.R
 import com.whaleroam.data.HistoryStore
+import com.whaleroam.data.SettingsStore
+import com.whaleroam.util.ThemeSeed
 import com.whaleroam.data.Place
 import com.whaleroam.databinding.ActivityHistoryBinding
 
@@ -24,6 +26,8 @@ class HistoryActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // v1.5.0：种子色覆盖层要在 inflate 前应用，否则界面仍是旧配色
+        ThemeSeed.applyTo(this, SettingsStore(this).themeSeedId)
         binding = ActivityHistoryBinding.inflate(layoutInflater)
         setContentView(binding.root)
         setSupportActionBar(binding.toolbar)

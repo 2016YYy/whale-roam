@@ -4,7 +4,10 @@ import android.app.Application
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.os.Build
+import androidx.appcompat.app.AppCompatDelegate
+import com.whaleroam.data.SettingsStore
 import com.whaleroam.service.AppContext
+import com.whaleroam.ui.ThemeMode
 
 class WhaleRoamApp : Application() {
 
@@ -20,7 +23,17 @@ class WhaleRoamApp : Application() {
     override fun onCreate() {
         super.onCreate()
         AppContext.attach(this)
+        // v1.5.0：主题模式要在任何 Activity 创建前生效，
+        // 否则冷启动时会先按默认（跟随系统）渲染一帧再切换，出现闪烁。
+        // 放在 Application.onCreate 里是最早的时机。
+        applyThemeMode()
         createChannels()
+    }
+
+    /** 把用户选择的主题模式（跟随系统 / 浅色 / 深色）应用到全局 */
+    private fun applyThemeMode() {
+        val mode = SettingsStore(this).themeMode
+        AppCompatDelegate.setDefaultNightMode(ThemeMode.toNightMode(mode))
     }
 
     private fun createChannels() {

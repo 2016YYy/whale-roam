@@ -45,6 +45,12 @@ class JoystickService : Service() {
 
     private lateinit var wm: WindowManager
     private lateinit var settings: SettingsStore
+
+    /**
+     * 当前主题种子色 id（v1.5.0）：从设置读取，悬浮窗配色跟随用户选择的 8 套主题。
+     * 服务存活期间主题不会变，因此只在 showOverlay 时取一次即可。
+     */
+    private var seedId = 0
     private var rootView: FrameLayout? = null
     private var wmParams: WindowManager.LayoutParams? = null
 
@@ -174,6 +180,8 @@ class JoystickService : Service() {
     private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
 
     private fun showOverlay() {
+        // 主题种子色：决定摇杆配色，越界时 ThemeSeed.byId 自动回退深海蓝
+        seedId = settings.themeSeedId
         sizePx = dp(140)
         val knobSize = dp(56)
         val innerSize = dp(40)
@@ -197,12 +205,12 @@ class JoystickService : Service() {
         }
 
         val container = FrameLayout(this).apply {
-            background = DrawableFactory.joystickBase(context)
+            background = DrawableFactory.joystickBase(context, seedId)
         }
 
         // 摇杆内圈（可推杆 + 单击锁定）：整体作为「旋钮」随手指平移
         val knobView = FrameLayout(this).apply {
-            background = DrawableFactory.joystickKnob(context)
+            background = DrawableFactory.joystickKnob(context, seedId)
         }
         val innerView = TextView(this).apply {
             text = ""
@@ -212,7 +220,7 @@ class JoystickService : Service() {
             isClickable = false
             isFocusable = false
             contentDescription = getString(R.string.js_cd_lock)
-            background = DrawableFactory.joystickInner(context, false)
+            background = DrawableFactory.joystickInner(context, false, seedId)
         }
         knobView.addView(
             innerView,
@@ -231,7 +239,7 @@ class JoystickService : Service() {
             textSize = 12f
             setTextColor(Color.WHITE)
             gravity = Gravity.CENTER
-            background = DrawableFactory.joystickTierChip(context, false)
+            background = DrawableFactory.joystickTierChip(context, false, seedId)
             setOnClickListener {
                 val next = (settings.speedTier + 1) % 3
                 settings.speedTier = next
@@ -256,7 +264,7 @@ class JoystickService : Service() {
             textSize = 11f
             setTextColor(Color.WHITE)
             gravity = Gravity.CENTER
-            background = DrawableFactory.joystickHandle(context)
+            background = DrawableFactory.joystickHandle(context, seedId)
             contentDescription = getString(R.string.js_cd_drag)
             setOnTouchListener { _, e -> handleDragTouch(e) }
         }
@@ -490,9 +498,9 @@ class JoystickService : Service() {
     }
 
     private fun updateLockVisual() {
-        inner?.background = DrawableFactory.joystickInner(this, locked)
+        inner?.background = DrawableFactory.joystickInner(this, locked, seedId)
         inner?.text = if (locked) getString(R.string.js_lock_mark) else ""
-        tierButton?.background = DrawableFactory.joystickTierChip(this, locked)
+        tierButton?.background = DrawableFactory.joystickTierChip(this, locked, seedId)
         lockBadge?.visibility = if (locked) View.VISIBLE else View.GONE
     }
 

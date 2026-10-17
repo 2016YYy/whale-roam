@@ -34,7 +34,7 @@
             android:padding="8dp" />
         <TextView android:id="@+id/empty"
             android:layout_width="match_parent" android:layout_height="match_parent"
-            android:gravity="center" android:textSize="14sp" android:textColor="#666666"
+            android:gravity="center" android:textSize="14sp" android:textColor="@color/soft_text_secondary"
             android:visibility="gone" />
     </FrameLayout>
 </LinearLayout>

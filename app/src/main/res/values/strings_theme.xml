@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    v1.5.0 主题系统专用字符串，统一 theme_ 前缀（与 record_ / js_ / disclaimer_ / mirror_ 互不重名）。
+-->
+<resources>
+
+    <!-- 外观分组 -->
+    <string name="theme_group_title">外观</string>
+    <string name="theme_mode_title">主题模式</string>
+    <string name="theme_mode_follow">跟随系统</string>
+    <string name="theme_mode_light">浅色</string>
+    <string name="theme_mode_dark">深色</string>
+    <string name="theme_seed_title">主题配色（8 套种子色）</string>
+    <string name="theme_seed_hint">点击色块即时切换，设置会自动保存</string>
+
+    <!-- 8 套种子色名称（与 ThemeSeed.NAMES 顺序一致，索引 0~7） -->
+    <string name="theme_seed_whale">深海蓝</string>
+    <string name="theme_seed_mint">薄荷绿</string>
+    <string name="theme_seed_sunset">落日橙</string>
+    <string name="theme_seed_sakura">樱花粉</string>
+    <string name="theme_seed_violet">紫罗兰</string>
+    <string name="theme_seed_teal">青碧</string>
+    <string name="theme_seed_amber">琥珀金</string>
+    <string name="theme_seed_graphite">石墨灰</string>
+
+    <!-- 切换结果提示 -->
+    <string name="theme_seed_applied">已切换主题配色：%1$s</string>
+    <string name="theme_mode_applied">已切换主题模式：%1$s</string>
+
+</resources>

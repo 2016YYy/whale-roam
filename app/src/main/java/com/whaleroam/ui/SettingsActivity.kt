@@ -1,22 +1,33 @@
 package com.whaleroam.ui
 
 import android.os.Bundle
+import android.view.View
+import android.widget.LinearLayout
 import android.widget.SeekBar
 import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.app.AppCompatDelegate
 import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.materialswitch.MaterialSwitch
 import com.whaleroam.BuildConfig
 import com.whaleroam.R
 import com.whaleroam.data.SettingsStore
+import com.whaleroam.util.DrawableFactory
+import com.whaleroam.util.ThemeSeed
 
 class SettingsActivity : AppCompatActivity() {
 
     private lateinit var settings: SettingsStore
 
+    /** 种子色色块视图缓存，切换选中态时只改描边，不重建 */
+    private val swatches = ArrayList<Pair<View, Int>>()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // v1.5.0：种子色覆盖层必须在 setContentView 之前应用到主题，
+        // 否则本次 inflate 出来的视图用的还是旧色
+        ThemeSeed.applyTo(this, SettingsStore(this).themeSeedId)
         setContentView(R.layout.activity_settings)
         settings = SettingsStore(this)
 
@@ -62,12 +73,13 @@ class SettingsActivity : AppCompatActivity() {
             onChange = { p -> settings.bikeSpeedMps = (p / 10f).coerceAtLeast(0.1f) })
 
         // ---------- 历史记录有效期 ----------
-        // v1.4.0 修复：SeekBar 的 max 为 364（即 progress 0~364），对应天数 1~365，
-        // 此前 max 只有 30，用户无法把有效期设到 30 天以上，与设置项 1~365 的约束不符
         bindSeekBar(R.id.historyDaysBar, R.id.historyDaysVal,
             init = (settings.historyExpirationDays - 1).coerceIn(0, 364),
             fmt = { "${it + 1} 天" },
             onChange = { p -> settings.historyExpirationDays = (p + 1).coerceIn(1, 365) })
+
+        // ---------- 外观：主题模式 + 8 套种子色（v1.5.0） ----------
+        setupAppearance()
 
         // ---------- 关于 ----------
         val disclaimerRow = findViewById<TextView>(R.id.rowDisclaimer)
@@ -84,11 +96,8 @@ class SettingsActivity : AppCompatActivity() {
         }
 
         disclaimerRow.setOnClickListener {
-            AlertDialog.Builder(this)
-                .setTitle(R.string.disclaimer_title)
-                .setMessage(R.string.disclaimer_body)
-                .setPositiveButton(R.string.ok, null)
-                .show()
+            // 只读展示，不影响 settings.disclaimerAccepted
+            DisclaimerDialog.showReadOnly(this)
         }
         aboutRow.setOnClickListener {
             AlertDialog.Builder(this)
@@ -97,6 +106,91 @@ class SettingsActivity : AppCompatActivity() {
                 .setPositiveButton(R.string.ok, null)
                 .show()
         }
+    }
+
+    /**
+     * 外观分组：主题模式单选 + 8 套种子色横向选择器。
+     *
+     * 模式切换走 AppCompatDelegate.setDefaultNightMode + recreate()，
+     * 种子色切换只改主题覆盖层，同样 recreate() 让全界面重新着色。
+     */
+    private fun setupAppearance() {
+        val modeRow = findViewById<TextView>(R.id.themeModeRow)
+        val modeValue = findViewById<TextView>(R.id.themeModeValue)
+        modeValue.text = getString(modeNameRes(settings.themeMode))
+        modeRow.setOnClickListener { showThemeModeDialog(modeValue) }
+
+        val container = findViewById<LinearLayout>(R.id.themeSeedContainer)
+        container.removeAllViews()
+        swatches.clear()
+        val density = resources.displayMetrics.density
+        val size = (44 * density).toInt()
+        val margin = (8 * density).toInt()
+        ThemeSeed.THEMES.forEach { seed ->
+            val swatch = View(this).apply {
+                background = DrawableFactory.seedSwatch(this@SettingsActivity, seed.id, seed.id == settings.themeSeedId)
+                val lp = LinearLayout.LayoutParams(size, size)
+                lp.marginEnd = margin
+                layoutParams = lp
+                contentDescription = getString(seed.nameRes)
+                setOnClickListener { onSeedPicked(seed.id) }
+            }
+            swatches.add(Pair(swatch, seed.id))
+            container.addView(swatch)
+        }
+    }
+
+    /** 点某个种子色块：写设置、刷新描边、recreate 让全局重新着色 */
+    private fun onSeedPicked(seedId: Int) {
+        if (seedId == settings.themeSeedId) return
+        settings.themeSeedId = seedId
+        ThemeSeed.applyTo(this, seedId)
+        refreshSwatchSelection()
+        android.widget.Toast.makeText(
+            this,
+            getString(R.string.theme_seed_applied, getString(ThemeSeed.byId(seedId).nameRes)),
+            android.widget.Toast.LENGTH_SHORT
+        ).show()
+        // recreate 会让整个界面按新种子色重新 inflate，比逐个视图改色更彻底
+        recreate()
+    }
+
+    /** 只更新描边选中态，不重建视图 */
+    private fun refreshSwatchSelection() {
+        swatches.forEach { (view, id) ->
+            view.background = DrawableFactory.seedSwatch(this, id, id == settings.themeSeedId)
+        }
+    }
+
+    /** 主题模式单选对话框 */
+    private fun showThemeModeDialog(valueLabel: TextView) {
+        val labels = ThemeMode.ALL.map { getString(modeNameRes(it)) }.toTypedArray()
+        var checked = ThemeMode.ALL.indexOf(settings.themeMode).coerceAtLeast(0)
+        AlertDialog.Builder(this)
+            .setTitle(R.string.theme_mode_title)
+            .setSingleChoiceItems(labels, checked) { _, which -> checked = which }
+            .setPositiveButton(R.string.ok) { _, _ ->
+                val picked = ThemeMode.ALL[checked]
+                if (picked != settings.themeMode) {
+                    settings.themeMode = picked
+                    valueLabel.text = getString(modeNameRes(picked))
+                    android.widget.Toast.makeText(
+                        this,
+                        getString(R.string.theme_mode_applied, getString(modeNameRes(picked))),
+                        android.widget.Toast.LENGTH_SHORT
+                    ).show()
+                    // setDefaultNightMode 会触发所有 Activity 重建，深浅色立即生效
+                    AppCompatDelegate.setDefaultNightMode(ThemeMode.toNightMode(picked))
+                }
+            }
+            .setNegativeButton(R.string.cancel, null)
+            .show()
+    }
+
+    private fun modeNameRes(mode: Int): Int = when (mode) {
+        ThemeMode.DARK -> R.string.theme_mode_dark
+        ThemeMode.LIGHT -> R.string.theme_mode_light
+        else -> R.string.theme_mode_follow
     }
 
     /** 通用 SeekBar 绑定：init 初始进度，fmt 格式化显示，onChange 写回设置 */

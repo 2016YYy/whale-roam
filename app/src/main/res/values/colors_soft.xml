@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    v1.5.0 通用「柔和」色值（不绑定种子色，深浅两套各一份）。
+    用于把布局里写死的 #EEEEEE / #666666 / #999999 / #888888 收拢成资源引用。
+    深色覆盖见 values-night/colors.xml。
+-->
+<resources>
+
+    <color name="soft_divider">#EEEEEE</color>
+    <color name="soft_text_secondary">#666666</color>
+    <color name="soft_text_hint">#999999</color>
+    <color name="soft_text_tertiary">#888888</color>
+
+</resources>

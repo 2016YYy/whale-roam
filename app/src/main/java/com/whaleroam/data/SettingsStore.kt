@@ -100,4 +100,22 @@ class SettingsStore(context: Context) {
     var replayLoop: Boolean
         get() = sp.getBoolean("replay_loop", false)
         set(v) = sp.edit().putBoolean("replay_loop", v).apply()
+
+    // ---------- 外观：主题模式与种子色（v1.5.0） ----------
+
+    /**
+     * 主题模式：0 跟随系统 / 1 浅色 / 2 深色。
+     * 与 AppCompatDelegate.MODE_NIGHT_* 的映射见 ui/ThemeMode.kt。
+     */
+    var themeMode: Int
+        get() = sp.getInt("theme_mode", 0)
+        set(v) = sp.edit().putInt("theme_mode", v.coerceIn(0, 2)).apply()
+
+    /**
+     * 主题种子色 id：0~7，对应 util/ThemeSeed.THEMES 的索引。
+     * 默认 0（深海蓝），沿用历史配色，升级用户无感知。
+     */
+    var themeSeedId: Int
+        get() = sp.getInt("theme_seed_id", 0)
+        set(v) = sp.edit().putInt("theme_seed_id", v.coerceIn(0, 7)).apply()
 }

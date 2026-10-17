@@ -1,5 +1,28 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+    v1.5.0 主题系统：8 套种子色 + 深浅两套基础色。
+    命名规则：<种子色前缀>_primary / _dark / _accent / _bg，4 组一套；
+    ThemeSeed.THEMES（ui/ThemeSeed.kt）与 DrawableFactory 共用这里的色值。
+    深色模式（values-night）只覆盖 seed_* 基础色，种子色本身在深色下同样成立。
+-->
 <resources>
+
+    <!-- 基础色（浅色 / 深色各一套，night 由 values-night/colors.xml 覆盖） -->
+    <color name="seed_primary">#1565C0</color>
+    <color name="seed_primary_dark">#0D47A1</color>
+    <color name="seed_accent">#42A5F5</color>
+    <color name="seed_bg">#F5F9FF</color>
+    <color name="seed_surface">#FFFFFF</color>
+    <color name="seed_on_primary">#FFFFFF</color>
+    <color name="seed_surface_variant">#F5F9FF</color>
+    <color name="seed_on_surface">#1A1C1E</color>
+    <color name="seed_on_surface_variant">#5A6266</color>
+    <color name="seed_outline">#C7CDD1</color>
+    <!-- 分隔线 / 次要文字（浅色默认值，深色由 night 覆盖） -->
+    <color name="seed_divider">#EEEEEE</color>
+    <color name="seed_text_hint">#888888</color>
+
+    <!-- 历史兼容别名：早期代码/布局直接用 whale_* 引用，保留原色值不变 -->
     <color name="whale_primary">#1565C0</color>
     <color name="whale_primary_dark">#0D47A1</color>
     <color name="whale_accent">#42A5F5</color>
@@ -10,4 +33,55 @@
     <color name="whale_join">#1E88E5</color>
     <color name="black">#000000</color>
     <color name="white">#FFFFFF</color>
+
+    <!-- ============ 8 套主题种子色（scope 第一章，索引 0~7，0 为默认深海蓝） ============ -->
+
+    <!-- 0 深海蓝 whale（默认）：沿用历史 v1.4.0 及以前的配色，升级用户无感知 -->
+    <color name="seed_whale_primary">#1565C0</color>
+    <color name="seed_whale_dark">#0D47A1</color>
+    <color name="seed_whale_accent">#42A5F5</color>
+    <color name="seed_whale_bg">#F5F9FF</color>
+
+    <!-- 1 薄荷绿 mint -->
+    <color name="seed_mint_primary">#00897B</color>
+    <color name="seed_mint_dark">#004D40</color>
+    <color name="seed_mint_accent">#4DB6AC</color>
+    <color name="seed_mint_bg">#F0FAF8</color>
+
+    <!-- 2 落日橙 sunset -->
+    <color name="seed_sunset_primary">#EF6C00</color>
+    <color name="seed_sunset_dark">#E65100</color>
+    <color name="seed_sunset_accent">#FFA726</color>
+    <color name="seed_sunset_bg">#FFF8F2</color>
+
+    <!-- 3 樱花粉 sakura -->
+    <color name="seed_sakura_primary">#D81B60</color>
+    <color name="seed_sakura_dark">#AD1457</color>
+    <color name="seed_sakura_accent">#F06292</color>
+    <color name="seed_sakura_bg">#FFF5F8</color>
+
+    <!-- 4 紫罗兰 violet -->
+    <color name="seed_violet_primary">#7E57C2</color>
+    <color name="seed_violet_dark">#5E35B1</color>
+    <color name="seed_violet_accent">#9575CD</color>
+    <color name="seed_violet_bg">#F8F5FF</color>
+
+    <!-- 5 青碧 teal -->
+    <color name="seed_teal_primary">#00838F</color>
+    <color name="seed_teal_dark">#006064</color>
+    <color name="seed_teal_accent">#26C6DA</color>
+    <color name="seed_teal_bg">#F0FBFC</color>
+
+    <!-- 6 琥珀金 amber -->
+    <color name="seed_amber_primary">#F9A825</color>
+    <color name="seed_amber_dark">#F57F17</color>
+    <color name="seed_amber_accent">#FFCA28</color>
+    <color name="seed_amber_bg">#FFFDF2</color>
+
+    <!-- 7 石墨灰 graphite -->
+    <color name="seed_graphite_primary">#455A64</color>
+    <color name="seed_graphite_dark">#263238</color>
+    <color name="seed_graphite_accent">#78909C</color>
+    <color name="seed_graphite_bg">#F6F8F9</color>
+
 </resources>

@@ -11,6 +11,8 @@ object UpdateBus {
     sealed class Event {
         /** pct < 0 表示未知总大小（不确定进度条） */
         data class Progress(val pct: Int, val downloaded: Long, val total: Long) : Event()
+        /** 当前使用的下载线路域名（v1.5.0 镜像加速），界面据此显示「当前线路：xxx」 */
+        data class MirrorChanged(val host: String) : Event()
         data class Done(val apkPath: String) : Event()
         data class Failed(val msg: String) : Event()
         object Cancelled : Event()

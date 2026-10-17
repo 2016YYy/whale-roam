@@ -23,6 +23,7 @@ import com.whaleroam.data.RouteStore
 import com.whaleroam.data.SettingsStore
 import com.whaleroam.service.MockLocationEngine
 import com.whaleroam.service.RouteReplayer
+import com.whaleroam.util.ThemeSeed
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -53,6 +54,8 @@ class RouteActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // v1.5.0：种子色覆盖层要在 setContentView 前应用，否则界面仍是旧配色
+        ThemeSeed.applyTo(this, SettingsStore(this).themeSeedId)
         setContentView(R.layout.activity_routes)
         setSupportActionBar(findViewById(R.id.toolbar))
         supportActionBar?.setDisplayHomeAsUpEnabled(true)

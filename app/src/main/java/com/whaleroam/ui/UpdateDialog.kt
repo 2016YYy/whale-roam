@@ -44,6 +44,8 @@ class UpdateDialog private constructor(
     private val sizeText: TextView = view.findViewById(R.id.updateSizeText)
     private val pctText: TextView = view.findViewById(R.id.updatePctText)
     private val resultText: TextView = view.findViewById(R.id.updateResultText)
+    /** v1.5.0：当前下载线路域名（镜像加速） */
+    private val mirrorLine: TextView = view.findViewById(R.id.updateMirrorLine)
     private val negativeBtn: MaterialButton = view.findViewById(R.id.updateNegativeButton)
     private val positiveBtn: MaterialButton = view.findViewById(R.id.updatePositiveButton)
 
@@ -125,6 +127,9 @@ class UpdateDialog private constructor(
         sizeText.text = activity.getString(R.string.update_dl_indeterminate)
         pctText.text = ""
         body.text = activity.getString(R.string.update_dl_doing)
+        // v1.5.0：先用 latest.json 命中的线路顶上，测速完成后由 MirrorChanged 刷新
+        mirrorLine.visibility = View.VISIBLE
+        mirrorLine.text = activity.getString(R.string.mirror_current, updateInfo.mirror)
         negativeBtn.text = activity.getString(R.string.update_dl_cancel)
         negativeBtn.visibility = View.VISIBLE
         negativeBtn.setOnClickListener { cancelDownload() }
@@ -232,6 +237,11 @@ class UpdateDialog private constructor(
                     positiveBtn.setOnClickListener {
                         apkFile?.let { f -> UpdateDownloadService.installApk(activity, f) }
                     }
+                }
+                is UpdateBus.Event.MirrorChanged -> {
+                    // v1.5.0：显示当前下载线路域名，切换镜像时同步刷新
+                    mirrorLine.visibility = if (e.host.isBlank()) View.GONE else View.VISIBLE
+                    mirrorLine.text = activity.getString(R.string.mirror_current, e.host)
                 }
                 is UpdateBus.Event.Failed -> showError(e.msg)
                 UpdateBus.Event.Cancelled -> {

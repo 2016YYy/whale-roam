@@ -98,26 +98,44 @@ def verify_apk(path):
     return vc, vn, cert
 
 
+# 合法的表情分段标题（RELEASE.md 4.2 固定表，逐字一致）
+SEGMENT_TITLES = (
+    "### 🎨 界面与主题",
+    "### 🛡️ 合规与声明",
+    "### ⬇️ 更新与下载",
+    "### ✨ 新增功能",
+    "### 🐛 问题修复",
+    "### 📦 安装说明",
+)
+
+
 def check_body(tag, body):
-    """按 RELEASE.md 第 4 节模板校验 Release 正文"""
+    """按 RELEASE.md 第 4 节模板校验 Release 正文（表情分段格式）"""
     ver = tag.lstrip("v")
     issues = []
     if not re.search(r"^## " + re.escape(ver) + r" 更新说明$", body, re.M):
         issues.append("一级标题应为 '## %s 更新说明'" % ver)
-    if not re.search(r"^### 安装说明$", body, re.M):
-        issues.append("缺少 '### 安装说明' 分节")
+    if "### 📦 安装说明" not in body:
+        issues.append("缺少 '### 📦 安装说明' 分节")
     if "完整变更历史见 [CHANGELOG.md]" not in body:
         issues.append("缺少 CHANGELOG 链接")
-    if re.search(r"^### [^\n]*[✨📦⚠️]", body, re.M):
-        issues.append("分节标题不应带 emoji")
-    # 修复条目不应重复「修复」二字
-    m = re.search(r"^### 修复\n(.*?)(?=^### |\Z)", body, re.M | re.S)
+    # 所有 ### 标题必须是固定表里的表情分段（不允许自造标题）
+    for h in re.findall(r"^### (.+)$", body, re.M):
+        if ("### " + h) not in SEGMENT_TITLES:
+            issues.append("分节标题不合规（必须是固定表中的表情分段）: ### " + h)
+    # 修复段落条目不应重复「修复」二字
+    m = re.search(r"^### 🐛 问题修复\n(.*?)(?=^### |\Z)", body, re.M | re.S)
     if m:
         for ln in m.group(1).splitlines():
             if ln.strip().startswith("- ") and "修复" in ln:
                 issues.append("修复条目正文重复出现「修复」：" + ln.strip()[:40])
+    # 条目名称必须加粗：- **名称**：说明
+    for ln in body.splitlines():
+        s = ln.strip()
+        if s.startswith("- ") and not re.match(r"^- \*\*.+?\*\*", s):
+            issues.append("条目名称未加粗: " + s[:40])
     # 安装说明应为 3 条编号
-    m2 = re.search(r"^### 安装说明\n(.*?)(?=\n\n|\Z)", body, re.M | re.S)
+    m2 = re.search(r"^### 📦 安装说明\n(.*?)(?=\n\n|\Z)", body, re.M | re.S)
     if m2:
         nums = re.findall(r"^\d+\.", m2.group(1), re.M)
         if len(nums) != 3:

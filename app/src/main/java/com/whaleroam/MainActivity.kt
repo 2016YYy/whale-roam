@@ -28,6 +28,7 @@ import com.whaleroam.databinding.ActivityMainBinding
 import com.whaleroam.service.JoystickService
 import com.whaleroam.service.MockLocationEngine
 import com.whaleroam.service.MockLocationService
+import com.whaleroam.ui.DisclaimerDialog
 import com.whaleroam.ui.HistoryActivity
 import com.whaleroam.ui.RouteActivity
 import com.whaleroam.ui.SettingsActivity
@@ -35,6 +36,7 @@ import com.whaleroam.ui.UpdateDialog
 import com.whaleroam.update.UpdateInfo
 import com.whaleroam.update.UpdateManager
 import com.whaleroam.util.GeoCoordConverter
+import com.whaleroam.util.ThemeSeed
 import com.whaleroam.util.NominatimClient
 import org.osmdroid.config.Configuration
 import org.osmdroid.events.MapEventsReceiver
@@ -65,12 +67,15 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // v1.5.0：种子色覆盖层必须在 inflate 之前应用到主题，否则界面还是旧配色。
+        // 注意 settings 要先于这里初始化，因此提前到 super.onCreate 之后立刻构造。
+        settings = SettingsStore(this)
+        ThemeSeed.applyTo(this, settings.themeSeedId)
         Configuration.getInstance().userAgentValue = packageName
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
         setSupportActionBar(binding.toolbar)
-        settings = SettingsStore(this)
         history = HistoryStore(this)
 
         setupDrawer()
@@ -562,26 +567,16 @@ class MainActivity : AppCompatActivity() {
 
     // ---------- 免责声明 ----------
 
-    /** 首次启动必须阅读并同意免责声明，否则不能使用本软件 */
+    /** 首次启动必须阅读并勾选同意免责声明，否则不能使用本软件 */
     private fun ensureDisclaimerAccepted() {
         if (settings.disclaimerAccepted) return
-        AlertDialog.Builder(this)
-            .setTitle(R.string.disclaimer_title)
-            .setMessage(R.string.disclaimer_body)
-            .setCancelable(false)
-            .setPositiveButton(R.string.disclaimer_agree) { _, _ ->
-                settings.disclaimerAccepted = true
-            }
-            .setNegativeButton(R.string.disclaimer_exit) { _, _ -> finish() }
-            .show()
+        // 强制态：未勾选时「同意」不可点；点「不同意」/返回键/对话框外部 → finish() 退出应用
+        DisclaimerDialog.showForce(this) { settings.disclaimerAccepted = true }
     }
 
+    /** 抽屉「免责声明」入口：只读展示全部条款，不影响已同意的状态 */
     private fun showDisclaimer() {
-        AlertDialog.Builder(this)
-            .setTitle(R.string.disclaimer_title)
-            .setMessage(R.string.disclaimer_body)
-            .setPositiveButton(R.string.ok, null)
-            .show()
+        DisclaimerDialog.showReadOnly(this)
     }
 
     private fun showAbout() {

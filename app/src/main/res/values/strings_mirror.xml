@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- v1.5.0 更新下载加速（镜像源）专用字符串，统一 mirror_ 前缀。 -->
+
+    <!-- 当前线路展示：占位符为镜像域名，如 ghfast.top / cdn.jsdelivr.net -->
+    <string name="mirror_current">当前线路：%1$s</string>
+
+    <!-- 切换线路提示（下载中途自动换源时） -->
+    <string name="mirror_switched">已切换到更快的线路：%1$s</string>
+
+    <!-- 测速中 -->
+    <string name="mirror_probing">正在测速选择最快线路…</string>
+
+    <!-- 失败提示 -->
+    <string name="mirror_no_candidate">没有可用的下载地址</string>
+    <string name="mirror_all_failed">所有线路都下载失败，请检查网络后重试</string>
+
+    <!-- 设置页：更新来源说明 -->
+    <string name="mirror_sources_title">更新加速线路</string>
+    <string name="mirror_sources_summary">内置 GitHub 高速镜像，自动选最快线路；失败自动切换</string>
+</resources>

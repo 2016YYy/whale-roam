@@ -1,11 +1,110 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+    v1.5.0 主题（浅色 / 默认）。
+
+    两层结构：
+    1) Theme.WhaleRoam —— 全局基础主题（Manifest 里引用的就是它），只依赖可被
+       values-night 覆盖的基础色（seed_bg / seed_surface / seed_on_surface ...），
+       因此「跟随系统 / 浅色 / 深色」三档只靠 AppCompatDelegate.setDefaultNightMode 就能生效。
+    2) Theme.WhaleRoam.Seed.* —— 8 套种子色覆盖层（ThemeOverlay 形式），只覆盖
+       colorPrimary / colorPrimaryVariant / colorSecondary / statusBarColor / windowBackground。
+       Activity 在 setContentView 前调用 ThemeSeed.applyTo(this)（见 util/DrawableFactory.kt）
+       即可切换到当前种子色；深色版见 values-night/themes.xml（同一组 style 名，不覆盖 windowBackground）。
+-->
 <resources>
+
     <style name="Theme.WhaleRoam" parent="Theme.Material3.DayNight.NoActionBar">
-        <item name="colorPrimary">@color/whale_primary</item>
-        <item name="colorPrimaryVariant">@color/whale_primary_dark</item>
-        <item name="colorOnPrimary">@color/whale_on_primary</item>
-        <item name="colorSecondary">@color/whale_accent</item>
-        <item name="android:statusBarColor">@color/whale_primary_dark</item>
-        <item name="android:windowBackground">@color/whale_bg</item>
+        <item name="colorPrimary">@color/seed_primary</item>
+        <item name="colorPrimaryVariant">@color/seed_primary_dark</item>
+        <item name="colorOnPrimary">@color/seed_on_primary</item>
+        <item name="colorSecondary">@color/seed_accent</item>
+        <item name="colorSecondaryVariant">@color/seed_primary_dark</item>
+        <item name="colorOnSecondary">@color/seed_on_primary</item>
+        <item name="colorSurface">@color/seed_surface</item>
+        <item name="colorOnSurface">@color/seed_on_surface</item>
+        <item name="colorSurfaceVariant">@color/seed_surface_variant</item>
+        <item name="colorOnSurfaceVariant">@color/seed_on_surface_variant</item>
+        <item name="colorOutline">@color/seed_outline</item>
+        <item name="android:colorBackground">@color/seed_bg</item>
+        <item name="android:statusBarColor">@color/seed_primary_dark</item>
+        <item name="android:windowBackground">@color/seed_bg</item>
+        <!-- 浅色模式：状态栏 / 导航栏用深色图标 -->
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:windowLightNavigationBar">true</item>
     </style>
+
+    <!-- ============ 8 套种子色覆盖层（scope 第一章） ============ -->
+
+    <!-- 0 深海蓝 whale（默认）：沿用历史配色，升级用户无感知 -->
+    <style name="Theme.WhaleRoam.Seed.Whale" parent="">
+        <item name="colorPrimary">@color/seed_whale_primary</item>
+        <item name="colorPrimaryVariant">@color/seed_whale_dark</item>
+        <item name="colorSecondary">@color/seed_whale_accent</item>
+        <item name="android:statusBarColor">@color/seed_whale_dark</item>
+        <item name="android:windowBackground">@color/seed_whale_bg</item>
+    </style>
+
+    <!-- 1 薄荷绿 mint -->
+    <style name="Theme.WhaleRoam.Seed.Mint" parent="">
+        <item name="colorPrimary">@color/seed_mint_primary</item>
+        <item name="colorPrimaryVariant">@color/seed_mint_dark</item>
+        <item name="colorSecondary">@color/seed_mint_accent</item>
+        <item name="android:statusBarColor">@color/seed_mint_dark</item>
+        <item name="android:windowBackground">@color/seed_mint_bg</item>
+    </style>
+
+    <!-- 2 落日橙 sunset -->
+    <style name="Theme.WhaleRoam.Seed.Sunset" parent="">
+        <item name="colorPrimary">@color/seed_sunset_primary</item>
+        <item name="colorPrimaryVariant">@color/seed_sunset_dark</item>
+        <item name="colorSecondary">@color/seed_sunset_accent</item>
+        <item name="android:statusBarColor">@color/seed_sunset_dark</item>
+        <item name="android:windowBackground">@color/seed_sunset_bg</item>
+    </style>
+
+    <!-- 3 樱花粉 sakura -->
+    <style name="Theme.WhaleRoam.Seed.Sakura" parent="">
+        <item name="colorPrimary">@color/seed_sakura_primary</item>
+        <item name="colorPrimaryVariant">@color/seed_sakura_dark</item>
+        <item name="colorSecondary">@color/seed_sakura_accent</item>
+        <item name="android:statusBarColor">@color/seed_sakura_dark</item>
+        <item name="android:windowBackground">@color/seed_sakura_bg</item>
+    </style>
+
+    <!-- 4 紫罗兰 violet -->
+    <style name="Theme.WhaleRoam.Seed.Violet" parent="">
+        <item name="colorPrimary">@color/seed_violet_primary</item>
+        <item name="colorPrimaryVariant">@color/seed_violet_dark</item>
+        <item name="colorSecondary">@color/seed_violet_accent</item>
+        <item name="android:statusBarColor">@color/seed_violet_dark</item>
+        <item name="android:windowBackground">@color/seed_violet_bg</item>
+    </style>
+
+    <!-- 5 青碧 teal -->
+    <style name="Theme.WhaleRoam.Seed.Teal" parent="">
+        <item name="colorPrimary">@color/seed_teal_primary</item>
+        <item name="colorPrimaryVariant">@color/seed_teal_dark</item>
+        <item name="colorSecondary">@color/seed_teal_accent</item>
+        <item name="android:statusBarColor">@color/seed_teal_dark</item>
+        <item name="android:windowBackground">@color/seed_teal_bg</item>
+    </style>
+
+    <!-- 6 琥珀金 amber -->
+    <style name="Theme.WhaleRoam.Seed.Amber" parent="">
+        <item name="colorPrimary">@color/seed_amber_primary</item>
+        <item name="colorPrimaryVariant">@color/seed_amber_dark</item>
+        <item name="colorSecondary">@color/seed_amber_accent</item>
+        <item name="android:statusBarColor">@color/seed_amber_dark</item>
+        <item name="android:windowBackground">@color/seed_amber_bg</item>
+    </style>
+
+    <!-- 7 石墨灰 graphite -->
+    <style name="Theme.WhaleRoam.Seed.Graphite" parent="">
+        <item name="colorPrimary">@color/seed_graphite_primary</item>
+        <item name="colorPrimaryVariant">@color/seed_graphite_dark</item>
+        <item name="colorSecondary">@color/seed_graphite_accent</item>
+        <item name="android:statusBarColor">@color/seed_graphite_dark</item>
+        <item name="android:windowBackground">@color/seed_graphite_bg</item>
+    </style>
+
 </resources>

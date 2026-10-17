@@ -15,10 +15,23 @@ import com.whaleroam.WhaleRoamApp
 import com.whaleroam.util.ApkSignatureChecker
 import java.io.File
 import java.io.FileOutputStream
+import java.io.RandomAccessFile
 import java.net.HttpURLConnection
 import java.net.URL
 import kotlin.concurrent.thread
 
+/**
+ * 更新下载服务（v1.5.0 增加镜像加速与断点续传）。
+ *
+ * 下载流程：
+ *  1. [UpdateMirror.pickFastestMirror] 并发测速所有候选地址，选最快的一条；
+ *  2. 下载中失败（超时 / 断流 / 非 2xx）自动切下一个候选地址，
+ *     并用 HTTP Range 从「已下载字节数」处续传，最多重试 [MAX_SWITCH] 次；
+ *  3. 每次切换 / 命中线路都通过 [UpdateBus.Event.MirrorChanged] 上报，
+ *     界面据此显示「当前线路：<域名>」。
+ *
+ * 原有的取消、进度通知、签名校验、唤起安装等行为保持不变。
+ */
 class UpdateDownloadService : Service() {
 
     companion object {
@@ -41,6 +54,9 @@ class UpdateDownloadService : Service() {
             }
             context.startActivity(installIntent)
         }
+
+        /** 下载中途失败时最多切换几个候选地址（不含首个） */
+        private const val MAX_SWITCH = 2
     }
 
     @Volatile private var cancelled = false
@@ -68,49 +84,148 @@ class UpdateDownloadService : Service() {
         return START_NOT_STICKY
     }
 
-    private fun download(url: String, versionName: String) {
+    /**
+     * 带镜像加速与断点续传的下载。
+     *
+     * [rawUrl] 为 latest.json 给出的原始地址，先并发测速选出最快线路，
+     * 失败时依次切换到剩余候选，并用 Range 续传。
+     */
+    private fun download(rawUrl: String, versionName: String) {
         thread(name="whale-apk-download") {
-            var conn: HttpURLConnection? = null
-            try {
-                val outDir = File(getExternalFilesDir(null), "updates").apply { mkdirs() }
-                val outFile = File(outDir, "whale-roam-latest.apk")
-                if (outFile.exists()) outFile.delete()
+            val outDir = File(getExternalFilesDir(null), "updates").apply { mkdirs() }
+            val outFile = File(outDir, "whale-roam-latest.apk")
+            val candidates = UpdateMirror.apkCandidates(rawUrl)
+            if (candidates.isEmpty()) {
+                fail(getString(R.string.mirror_no_candidate))
+                return@thread
+            }
 
-                conn = (URL(url).openConnection() as HttpURLConnection).apply {
-                    connectTimeout = 15000
-                    readTimeout = 30000
-                    instanceFollowRedirects = true
+            // 1) 并发测速：选最快的线路。同步等待，失败时回退到第一个候选（直连）
+            val chosen = java.util.concurrent.atomic.AtomicReference<String?>(null)
+            val latch = java.util.concurrent.CountDownLatch(1)
+            // 注意：ProbeCallback 是普通接口（非 fun interface），
+            // 不能用 lambda 简写，必须显式 object，否则 Kotlin 类型推断会失败
+            UpdateMirror.pickFastestMirror(candidates, object : UpdateMirror.ProbeCallback {
+                override fun onResult(url: String, elapsedMs: Long) {
+                    chosen.set(url)
+                    latch.countDown()
                 }
-                val code = conn.responseCode
-                if (code != 200) { fail("HTTP $code"); return@thread }
-                val total = conn.contentLengthLong
-                conn.inputStream.use { input ->
-                    FileOutputStream(outFile).use { output ->
-                        val buf = ByteArray(8192)
-                        var read: Int
-                        var progress = 0L
-                        var lastPct = -1
-                        while (input.read(buf).also { read = it } != -1) {
-                            if (cancelled) { outFile.delete(); stopSelf(); return@thread }
-                            output.write(buf, 0, read)
-                            progress += read
-                            val pct = if (total > 0) (progress * 100 / total).toInt() else -1
-                            if (pct != lastPct) {
-                                lastPct = pct
-                                notifyProgress(versionName, pct)
-                                UpdateBus.post(UpdateBus.Event.Progress(pct, progress, total))
-                            }
-                        }
-                        output.flush()
-                    }
+            })
+            latch.await()
+            val order = ArrayList<String>()
+            val first = chosen.get() ?: candidates[0]
+            order.add(first)
+            // 其余候选按原顺序补在后面，作为失败时的切换目标
+            candidates.filter { it != first }.forEach { order.add(it) }
+
+            // 2) 依次尝试，失败切换 + Range 续传
+            var attempt = 0
+            var succeeded = false
+            while (attempt <= MAX_SWITCH && !cancelled) {
+                val target = order[attempt]
+                reportMirror(target)
+                val resumeFrom = if (attempt == 0) 0L else outFile.length().coerceAtLeast(0L)
+                try {
+                    downloadOne(target, outFile, versionName, resumeFrom)
+                    succeeded = true
+                    break
+                } catch (t: Throwable) {
+                    if (cancelled) break
+                    attempt++
+                    // 切下一个候选前把已下载的部分保留，续传要用
                 }
+            }
+
+            if (cancelled) {
+                outFile.delete()
+                stopSelf()
+                return@thread
+            }
+            if (succeeded) {
                 done(outFile, versionName)
-            } catch (t: Throwable) {
-                fail(t.message ?: "download error")
-            } finally {
-                conn?.disconnect()
+            } else {
+                outFile.delete()
+                fail(getString(R.string.mirror_all_failed))
             }
         }
+    }
+
+    /**
+     * 下载单个候选地址到 [outFile]。
+     *
+     * @param resumeFrom 从该字节偏移处开始写（>0 时带 Range 头续传）。
+     *                  **注意**：调用方需保证 outFile 已存在且长度 >= resumeFrom；
+     *                  本方法用 RandomAccessFile 定位到 resumeFrom 后追加写。
+     * @throws Exception 网络错误 / 非 2xx / 内容异常
+     */
+    private fun downloadOne(url: String, outFile: File, versionName: String, resumeFrom: Long) {
+        if (!outFile.exists()) {
+            outFile.parentFile?.mkdirs()
+            outFile.createNewFile()
+        }
+        var conn: HttpURLConnection? = null
+        try {
+            conn = (URL(url).openConnection() as HttpURLConnection).apply {
+                connectTimeout = 15000
+                readTimeout = 30000
+                instanceFollowRedirects = true
+                if (resumeFrom > 0) setRequestProperty("Range", "bytes=$resumeFrom-")
+            }
+            val code = conn.responseCode
+            if (code != 200 && code != 206) throw java.io.IOException("HTTP $code")
+
+            // 服务端不支持 Range 时会返回 200 且带全量内容，此时必须从头覆盖写
+            val appendMode = code == 206 && resumeFrom > 0
+            val startBytes = if (appendMode) resumeFrom else 0L
+
+            // 已下载量：续传时把已有部分算进去，进度条才不会倒退
+            val baseProgress = startBytes
+            val contentLength = if (code == 206) {
+                // 206 时 contentLengthLong 是剩余部分的大小
+                conn.contentLengthLong + startBytes
+            } else {
+                conn.contentLengthLong
+            }
+            val total = contentLength.coerceAtLeast(0L)
+
+            conn.inputStream.use { input ->
+                RandomAccessFile(outFile, "rw").use { raf ->
+                    if (!appendMode) raf.setLength(0) // 全量模式：清空旧内容
+                    raf.seek(startBytes)
+                    val buf = ByteArray(8192)
+                    var read: Int
+                    var progress = startBytes
+                    var lastPct = -1
+                    while (input.read(buf).also { read = it } != -1) {
+                        if (cancelled) throw java.io.IOException("cancelled")
+                        raf.write(buf, 0, read)
+                        progress += read
+                        val pct = if (total > 0) (progress * 100 / total).toInt() else -1
+                        if (pct != lastPct && pct >= 0) {
+                            lastPct = pct
+                            notifyProgress(versionName, pct)
+                            UpdateBus.post(UpdateBus.Event.Progress(pct, progress, total))
+                        } else if (pct < 0) {
+                            // 总大小未知：按 -1 上报，界面走不确定进度
+                            notifyProgress(versionName, -1)
+                            UpdateBus.post(UpdateBus.Event.Progress(-1, progress, 0L))
+                        }
+                    }
+                }
+            }
+
+            // 完整性粗校验：拿到 total 时必须一致，否则视为下载不完整
+            if (total > 0 && outFile.length() != total) {
+                throw java.io.IOException("size mismatch: got ${'$'}{outFile.length()} expect ${'$'}total")
+            }
+        } finally {
+            conn?.disconnect()
+        }
+    }
+
+    /** 把当前使用的线路域名广播给界面 */
+    private fun reportMirror(url: String) {
+        UpdateBus.post(UpdateBus.Event.MirrorChanged(UpdateMirror.hostOf(url)))
     }
 
     private fun cancelPendingIntent(): PendingIntent {
@@ -170,7 +285,8 @@ class UpdateDownloadService : Service() {
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         }
         val pi = PendingIntent.getActivity(this, 0, installIntent,
-            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+        )
         val n = NotificationCompat.Builder(this, WhaleRoamApp.CHANNEL_UPDATE)
             .setContentTitle(getString(R.string.app_name))
             .setContentText(getString(R.string.service_download_done))
@@ -194,8 +310,8 @@ class UpdateDownloadService : Service() {
             return
         }
         val n = NotificationCompat.Builder(this, WhaleRoamApp.CHANNEL_UPDATE)
-            .setContentTitle(getString(R.string.app_name))
             .setContentText("${getString(R.string.service_download_failed)}: $msg")
+            .setContentTitle(getString(R.string.app_name))
             .setSmallIcon(R.drawable.ic_whale_notif)
             .setAutoCancel(true)
             .build()
