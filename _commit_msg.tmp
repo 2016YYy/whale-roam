@@ -1,8 +1,0 @@
-chore: 发布工具脚本（幂等建 Tag/Release、上传校验 digest）
-
-- tools/release.py：一条命令完成 Tag + Release + APK 上传，可重复执行
-- 资产上传走 uploads.github.com（api.github.com 上传会 404）
-- 上传前用 aapt2 校验 versionCode/versionName，上传后比对 sha256 digest
-- 本机 hosts 把 GitHub 域名指向 127.0.0.1，脚本内置直连真实 IP 的适配
-
-用法：set GH_TOKEN=xxx && python tools/release.py --version 1.4.0 --code 5
