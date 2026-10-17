@@ -15,10 +15,12 @@
 
 退出码：0 = 全部通过；1 = 存在问题。
 """
+import base64
 import io
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -70,6 +72,9 @@ def session():
             Pinned("objects.githubusercontent.com", "185.199.108.133"))
     s.mount("https://release-assets.githubusercontent.com",
             Pinned("release-assets.githubusercontent.com", "185.199.108.133"))
+    # raw.githubusercontent.com 同样被 hosts 屏蔽，直连会拿到 127.0.0.1
+    s.mount("https://raw.githubusercontent.com",
+            Pinned("raw.githubusercontent.com", "185.199.110.133"))
     s.verify = False
     s.headers.update({
         "Authorization": "Bearer " + os.environ["GH_TOKEN"],
@@ -140,11 +145,18 @@ def main():
         tag = rel["tag_name"]
         for a in rel["assets"]:
             dest = os.path.join(tmpdir, a["name"])
-            r = s.get(a["browser_download_url"], timeout=600, allow_redirects=True)
-            if r.status_code != 200:
-                bad("%s 下载失败 HTTP %d" % (a["name"], r.status_code))
-                continue
-            open(dest, "wb").write(r.content)
+            # 本地缓存优先：release/_verify_cache 下同名同 size 直接用，省去重复下载
+            cached = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                                  "release", "_verify_cache", a["name"])
+            if os.path.exists(cached) and os.path.getsize(cached) == a["size"]:
+                shutil.copyfile(cached, dest)
+                print("    (使用本地缓存)" + a["name"])
+            else:
+                r = s.get(a["browser_download_url"], timeout=600, allow_redirects=True)
+                if r.status_code != 200:
+                    bad("%s 下载失败 HTTP %d" % (a["name"], r.status_code))
+                    continue
+                open(dest, "wb").write(r.content)
             vc, vn, cert = verify_apk(dest)
             records.append({"tag": tag, "name": a["name"], "vc": vc, "vn": vn, "cert": cert})
             print("    %-8s %-26s code=%-3d name=%-8s cert=%s…" % (tag, a["name"], vc, vn, cert[:16]))
@@ -197,14 +209,17 @@ def main():
 
     # ---------- 5. latest.json ----------
     print("\n[5] 校验 latest.json")
-    raw = s.get("https://raw.githubusercontent.com/%s/main/latest.json" % REPO, timeout=60)
-    # raw 域名 hosts 未屏蔽，直连即可；若失败则退回 API contents
-    if raw.status_code != 200:
+    content = None
+    try:
+        raw = s.get("https://raw.githubusercontent.com/%s/main/latest.json" % REPO, timeout=60)
+        if raw.status_code == 200:
+            content = raw.text
+    except Exception:
+        content = None
+    if content is None:
+        # raw 通道失败（hosts 屏蔽 / 连接被重置）→ 退回 API contents
         c = s.get("https://api.github.com/repos/%s/contents/latest.json?ref=main" % REPO, timeout=60).json()
-        import base64
         content = base64.b64decode(c["content"]).decode("utf-8")
-    else:
-        content = raw.text
     try:
         latest = json.loads(content)
         ok("latest.json 是合法 JSON")
