@@ -189,8 +189,8 @@ def main():
     rels = s.get("https://api.github.com/repos/%s/releases?per_page=100" % REPO, timeout=60).json()
     by_tag = {r["tag_name"]: r for r in rels}
 
-    local = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-                          "docs", "release-notes")
+    local = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
+                          "_build-cache", "release-notes")
     os.makedirs(local, exist_ok=True)
 
     for tag in ["v1.0.0", "v1.1.0", "v1.2.0", "v1.3.0", "v1.4.0"]:
