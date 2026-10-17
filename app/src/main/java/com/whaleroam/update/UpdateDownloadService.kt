@@ -147,7 +147,16 @@ class UpdateDownloadService : Service() {
     }
 
     private fun done(apk: File, versionName: String) {
-        if (cancelled) { apk.delete(); stopSelf(); return }
+        // v1.4.0 修复：取消标志与下载线程存在竞争——用户点取消的瞬间下载可能刚好读完最后一个字节，
+        // 于是 Cancelled 与 Done 双双回调，UI 先显示已取消又跳到"下载完成"。
+        // 这里在进入完成流程时再检查一次，并对已取消场景补发一次 Cancelled 让 UI 状态收敛。
+        if (cancelled) {
+            apk.delete()
+            UpdateBus.post(UpdateBus.Event.Cancelled)
+            stopForeground(STOP_FOREGROUND_REMOVE)
+            stopSelf()
+            return
+        }
         // 统一签名校验：安装包签名必须与当前应用一致，否则拒绝安装并提示
         if (!ApkSignatureChecker.matchesInstalledApp(this, apk)) {
             apk.delete()
@@ -177,6 +186,13 @@ class UpdateDownloadService : Service() {
     }
 
     private fun fail(msg: String) {
+        // 已取消的下载不应再报"失败"，否则用户会看到互相矛盾的提示
+        if (cancelled) {
+            UpdateBus.post(UpdateBus.Event.Cancelled)
+            stopForeground(STOP_FOREGROUND_REMOVE)
+            stopSelf()
+            return
+        }
         val n = NotificationCompat.Builder(this, WhaleRoamApp.CHANNEL_UPDATE)
             .setContentTitle(getString(R.string.app_name))
             .setContentText("${getString(R.string.service_download_failed)}: $msg")

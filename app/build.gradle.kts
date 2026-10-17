@@ -19,8 +19,11 @@ android {
         applicationId = "com.whaleroam"
         minSdk = 26
         targetSdk = 35
-        versionCode = 2
-        versionName = "1.1.0"
+        // 修复：v1.2/v1.3 发版时版本号未提交入库，导致仓库源码构建出的包版本号
+        // 落后于线上发布包（线上 v1.3.0 为 versionCode 4），用户覆盖升级会失败。
+        // 自 1.4.0 起版本号必须随发版提交。
+        versionCode = 5
+        versionName = "1.4.0"
         vectorDrawables.useSupportLibrary = true
     }
 

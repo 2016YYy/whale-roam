@@ -14,3 +14,10 @@ keystore.properties
 app/release/
 app/build/
 build/
+
+# v1.4.0 起：发布产物与本地构建缓存不入库
+/release/
+.kotlin/
+
+# 内部协作文档（团队接口契约 / 版本需求冻结清单）不入库
+/docs/

@@ -88,4 +88,27 @@
     <string name="pref_check_update">检查更新</string>
     <string name="pref_version">当前版本</string>
     <string name="search_searching">正在搜索…</string>
+
+    <!-- v1.4.0 路线回放 -->
+    <string name="title_routes">路线回放</string>
+
+    <!-- v1.4.0 路线录制入口（Lead 侧，record_ 前缀；回放页文案由 route_ 前缀的 strings_routes.xml 负责） -->
+    <string name="record_start">开始录制路线</string>
+    <string name="record_stop">停止录制</string>
+    <string name="record_started">已开始录制，用悬浮摇杆移动来记录轨迹</string>
+    <string name="record_save_title">保存路线</string>
+    <string name="record_save_msg">本次共记录 %1$d 个轨迹点，为这条路线起个名字：</string>
+    <string name="record_name_hint">路线名称</string>
+    <string name="record_default_name">路线 %1$d</string>
+    <string name="record_saved">已保存路线「%1$s」（%2$d 个点）</string>
+    <string name="record_too_short">轨迹点太少，无法保存路线（至少需要 2 个点）</string>
+    <string name="record_auto_cancelled">模拟已停止，本次路线录制已取消</string>
+    <string name="record_need_mock">录制需要模拟定位正在运行。请先启动模拟，再用悬浮摇杆移动。</string>
+
+    <!-- v1.4.0 摇杆前置检查 -->
+    <string name="joystick_need_mock_first">摇杆需要模拟定位正在运行才能移动位置。\n\n请先在地图上选好位置并点击「启动模拟」，再开启悬浮摇杆。</string>
+
+    <!-- v1.4.0 通知栏快捷操作 -->
+    <string name="notif_action_stop">停止模拟</string>
+    <string name="service_mock_stopped">已停止模拟位置</string>
 </resources>

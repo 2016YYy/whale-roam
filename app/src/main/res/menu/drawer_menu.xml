@@ -3,6 +3,8 @@
     <group android:checkableBehavior="none">
         <item android:id="@+id/nav_history" android:title="@string/title_history" />
         <item android:id="@+id/nav_settings" android:title="@string/title_settings" />
+        <item android:id="@+id/nav_routes" android:title="@string/title_routes" />
+        <item android:id="@+id/nav_record" android:title="@string/record_start" />
     </group>
     <group android:checkableBehavior="none">
         <item android:id="@+id/nav_update" android:title="@string/action_check_update" />

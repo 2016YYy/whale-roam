@@ -71,4 +71,33 @@ class SettingsStore(context: Context) {
     var historyExpirationDays: Int
         get() = sp.getInt("history_expiration_days", 7)
         set(v) = sp.edit().putInt("history_expiration_days", v.coerceIn(1, 365)).apply()
+
+    // ---------- 悬浮摇杆（v1.4.0） ----------
+
+    /** 摇杆锁定态：锁定后松手仍按最后方向持续移动 */
+    var joystickLocked: Boolean
+        get() = sp.getBoolean("joystick_locked", false)
+        set(v) = sp.edit().putBoolean("joystick_locked", v).apply()
+
+    /** 悬浮摇杆窗口位置 X（屏幕像素），下次开启沿用 */
+    var joystickPosX: Int
+        get() = sp.getInt("joystick_pos_x", 100)
+        set(v) = sp.edit().putInt("joystick_pos_x", v).apply()
+
+    /** 悬浮摇杆窗口位置 Y（屏幕像素），下次开启沿用 */
+    var joystickPosY: Int
+        get() = sp.getInt("joystick_pos_y", 400)
+        set(v) = sp.edit().putInt("joystick_pos_y", v).apply()
+
+    // ---------- 路线回放（v1.4.0） ----------
+
+    /** 回放倍速（0.5x ~ 4.0x），只影响时间间隔，不影响路径 */
+    var replaySpeedFactor: Float
+        get() = sp.getFloat("replay_speed_factor", 1.0f)
+        set(v) = sp.edit().putFloat("replay_speed_factor", v.coerceIn(0.5f, 4.0f)).apply()
+
+    /** 回放是否循环 */
+    var replayLoop: Boolean
+        get() = sp.getBoolean("replay_loop", false)
+        set(v) = sp.edit().putBoolean("replay_loop", v).apply()
 }

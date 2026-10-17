@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent" android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <com.google.android.material.appbar.MaterialToolbar
+        android:id="@+id/toolbar"
+        android:layout_width="match_parent" android:layout_height="?attr/actionBarSize"
+        android:background="?attr/colorPrimary"
+        xmlns:app="http://schemas.android.com/apk/res-auto"
+        app:titleTextColor="@color/white" app:title="@string/title_routes" />
+
+    <!-- 回放状态条：仅在回放中显示，含停止按钮 -->
+    <LinearLayout android:id="@+id/replayBar"
+        android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:orientation="horizontal" android:gravity="center_vertical"
+        android:paddingStart="12dp" android:paddingEnd="8dp" android:paddingTop="6dp" android:paddingBottom="6dp"
+        android:background="@color/whale_accent" android:visibility="gone">
+        <TextView android:id="@+id/replayStatus"
+            android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
+            android:textSize="13sp" android:textColor="@color/white" />
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/replayStopBtn"
+            style="@style/Widget.Material3.Button.TextButton"
+            android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:minWidth="0dp" android:textColor="@color/white"
+            android:text="@string/route_replay_stop" />
+    </LinearLayout>
+
+    <FrameLayout android:layout_width="match_parent" android:layout_height="match_parent">
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/list"
+            android:layout_width="match_parent" android:layout_height="match_parent"
+            android:padding="8dp" />
+        <TextView android:id="@+id/empty"
+            android:layout_width="match_parent" android:layout_height="match_parent"
+            android:gravity="center" android:textSize="14sp" android:textColor="#666666"
+            android:visibility="gone" />
+    </FrameLayout>
+</LinearLayout>

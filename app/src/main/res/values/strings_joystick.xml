@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    v1.4.0 悬浮摇杆专用字符串。
+    前缀统一 js_，不要与 res/values/strings.xml 中的 key 重名（会资源冲突）。
+-->
+<resources>
+
+    <!-- 通知栏「关闭摇杆」Action -->
+    <string name="js_notif_close">关闭摇杆</string>
+
+    <!-- 速度档位（走 / 跑 / 骑） -->
+    <string name="js_tier_walk">走</string>
+    <string name="js_tier_run">跑</string>
+    <string name="js_tier_bike">骑</string>
+
+    <!-- 锁定 / 解锁 -->
+    <string name="js_lock_mark">锁</string>
+    <string name="js_lock_on">摇杆已锁定：推杆后松手仍会继续移动</string>
+    <string name="js_lock_off">摇杆已解锁，已停止移动</string>
+    <string name="js_cd_lock">点击内圈切换锁定状态</string>
+
+    <!-- 模拟未启动的视觉提示（scope 第 6 条 / 修复 7） -->
+    <string name="js_need_mock_short">未启动模拟</string>
+    <string name="js_need_mock_toast">模拟定位未启动，摇杆暂时无法移动</string>
+
+    <!-- 拖动把手 -->
+    <string name="js_drag_handle">≡</string>
+    <string name="js_cd_drag">拖动把手移动摇杆窗口</string>
+
+</resources>

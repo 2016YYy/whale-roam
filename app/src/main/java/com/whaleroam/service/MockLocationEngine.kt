@@ -104,12 +104,14 @@ object MockLocationEngine {
         injectThread = null
     }
 
-    /** 设定新目标点（热切换），立即生效 */
+    /** 设定新目标点（热切换），立即生效；accuracyMeters 会覆盖本次注入的精度 */
     @SuppressLint("WrongConstant")
     fun push(lat: Double, lon: Double, accuracyMeters: Float) {
         if (!running) return
         currentLat = lat
         currentLon = lon
+        // 修复 v1.3.0 遗留：此前该参数被忽略，热切换目标点时精度设置不生效
+        if (accuracyMeters > 0f) config = config.copy(accuracyMeters = accuracyMeters)
         pushNow()
     }
 
@@ -160,6 +162,10 @@ object MockLocationEngine {
 
     fun stop(context: Context) {
         running = false
+        // 修复 v1.3.0 遗留：停止时速度/方向未归零，位置静止但 speed 非零，
+        // 容易被运动类 App 的一致性校验识别为伪造数据
+        currentSpeedMps = 0f
+        currentBearingDeg = 0f
         stopInjectLoop()
         val lm = context.getSystemService(LocationManager::class.java)
         PROVIDERS.forEach { p ->

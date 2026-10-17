@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 路线回放（v1.4.0） -->
+    <string name="route_empty">还没有录制过路线</string>
+    <string name="route_empty_hint">开启模拟定位与悬浮摇杆，移动并保存后即可生成路线</string>
+    <string name="route_meta">%1$d 点 · %2$s</string>
+    <string name="route_created_at">创建于 %1$s</string>
+    <string name="route_replay">开始回放</string>
+    <string name="route_replay_stop">停止回放</string>
+    <string name="route_replay_loop">循环回放</string>
+    <string name="route_replay_speed">回放倍速</string>
+    <string name="route_rename">重命名</string>
+    <string name="route_rename_title">重命名路线</string>
+    <string name="route_rename_hint">请输入新的路线名称</string>
+    <string name="route_delete_title">删除该路线？</string>
+    <string name="route_delete_msg">「%1$s」将被永久删除，无法恢复。</string>
+    <string name="route_need_mock">请先启动模拟定位</string>
+    <string name="route_replay_started">开始回放：%1$s</string>
+    <string name="route_replay_progress">正在回放「%1$s」：%2$d / %3$d</string>
+    <string name="route_replay_finished">回放结束</string>
+    <string name="route_replay_empty_points">该路线没有可回放的点</string>
+    <string name="route_replay_running">已有路线正在回放，请先停止</string>
+    <string name="route_speed_format">%1$sx</string>
+    <string name="route_duration_short">不到 1 秒</string>
+    <string name="route_duration">%1$d 分 %2$d 秒</string>
+    <string name="route_duration_sec">%1$d 秒</string>
+</resources>

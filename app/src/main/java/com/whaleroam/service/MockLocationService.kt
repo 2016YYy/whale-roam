@@ -16,6 +16,8 @@ class MockLocationService : Service() {
     companion object {
         const val ACTION_START = "com.whaleroam.START"
         const val ACTION_STOP = "com.whaleroam.STOP"
+        /** 通知栏「停止」按钮专用（与 ACTION_STOP 行为一致，单独常量便于区分来源） */
+        const val ACTION_STOP_FROM_NOTIF = "com.whaleroam.STOP_FROM_NOTIF"
         const val EXTRA_LAT = "lat"
         const val EXTRA_LON = "lon"
         const val EXTRA_ACCURACY = "accuracy"
@@ -25,7 +27,16 @@ class MockLocationService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
-            ACTION_STOP -> { stopMock(); return START_NOT_STICKY }
+            ACTION_STOP, ACTION_STOP_FROM_NOTIF -> {
+                stopMock()
+                if (intent?.action == ACTION_STOP_FROM_NOTIF) {
+                    // 从通知栏停止：顺带通知 UI 侧同步按钮状态（UI 会在 onResume 时重新读取引擎状态）
+                    android.widget.Toast.makeText(
+                        this, getString(R.string.service_mock_stopped), android.widget.Toast.LENGTH_SHORT
+                    ).show()
+                }
+                return START_NOT_STICKY
+            }
             else -> {
                 val lat = intent?.getDoubleExtra(EXTRA_LAT, 0.0) ?: 0.0
                 val lon = intent?.getDoubleExtra(EXTRA_LON, 0.0) ?: 0.0
@@ -71,7 +82,20 @@ class MockLocationService : Service() {
             .setSmallIcon(R.drawable.ic_whale_notif)
             .setOngoing(true)
             .setContentIntent(pi)
+            // v1.4.0：通知栏直接停止模拟，不用再回到 App
+            .addAction(0, getString(R.string.notif_action_stop), stopPendingIntent())
             .build()
+    }
+
+    /** 通知栏「停止模拟」按钮的 PendingIntent */
+    private fun stopPendingIntent(): PendingIntent {
+        val stopIntent = Intent(this, MockLocationService::class.java).apply {
+            action = ACTION_STOP_FROM_NOTIF
+        }
+        return PendingIntent.getService(
+            this, 2, stopIntent,
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+        )
     }
 
     override fun onDestroy() {

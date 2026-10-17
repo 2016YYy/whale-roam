@@ -48,6 +48,12 @@
             android:exported="false"
             android:label="@string/title_settings" />
 
+        <activity
+            android:name=".ui.RouteActivity"
+            android:exported="false"
+            android:label="@string/title_routes"
+            android:parentActivityName=".MainActivity" />
+
         <service
             android:name=".service.MockLocationService"
             android:enabled="true"

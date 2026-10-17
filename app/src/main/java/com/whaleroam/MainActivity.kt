@@ -29,6 +29,7 @@ import com.whaleroam.service.JoystickService
 import com.whaleroam.service.MockLocationEngine
 import com.whaleroam.service.MockLocationService
 import com.whaleroam.ui.HistoryActivity
+import com.whaleroam.ui.RouteActivity
 import com.whaleroam.ui.SettingsActivity
 import com.whaleroam.ui.UpdateDialog
 import com.whaleroam.update.UpdateInfo
@@ -94,6 +95,8 @@ class MainActivity : AppCompatActivity() {
             when (item.itemId) {
                 R.id.nav_history -> startActivity(Intent(this, HistoryActivity::class.java))
                 R.id.nav_settings -> startActivity(Intent(this, SettingsActivity::class.java))
+                R.id.nav_routes -> startActivity(Intent(this, RouteActivity::class.java))
+                R.id.nav_record -> toggleRecording()
                 R.id.nav_update -> checkUpdate()
                 R.id.nav_disclaimer -> showDisclaimer()
                 R.id.nav_about -> showAbout()
@@ -231,10 +234,7 @@ class MainActivity : AppCompatActivity() {
             putExtra(MockLocationService.EXTRA_ACCURACY, settings.accuracyMeters)
         }
         ContextCompat.startForegroundService(this, svc)
-        mocking = true
-        binding.startFab.text = getString(R.string.action_stop)
-        binding.startFab.setIconResource(R.drawable.ic_stop)
-        binding.statusText.text = getString(R.string.status_running, targetLat, targetLon)
+        applyMockingUi(true)
 
         // 启动模拟时自动记录定位历史（对标 gogogo recordCurrentLocation）：
         // 先以坐标占位入库，再异步逆地理编码回填地址名称
@@ -245,6 +245,86 @@ class MainActivity : AppCompatActivity() {
             }
             override fun onError(msg: String) { /* 失败保持坐标标签 */ }
         })
+    }
+
+    /**
+     * 路线录制开关（v1.4.0）：
+     * 录制必须依附于模拟定位——摇杆每 tick 上报的坐标才是"真实走过"的轨迹。
+     * 因此未启动模拟时直接提示，不进入录制态。
+     */
+    private fun toggleRecording() {
+        if (com.whaleroam.service.RouteRecorder.recording) {
+            stopRecordingAndSave()
+            return
+        }
+        if (!MockLocationEngine.running) {
+            AlertDialog.Builder(this)
+                .setTitle(R.string.record_start)
+                .setMessage(R.string.record_need_mock)
+                .setPositiveButton(R.string.ok, null)
+                .show()
+            return
+        }
+        com.whaleroam.service.RouteRecorder.start()
+        toast(getString(R.string.record_started))
+        invalidateOptionsMenuCompat()
+    }
+
+    /** 停止录制并让用户命名保存 */
+    private fun stopRecordingAndSave() {
+        val count = com.whaleroam.service.RouteRecorder.pointCount
+        if (count < 2) {
+            com.whaleroam.service.RouteRecorder.cancel()
+            toast(getString(R.string.record_too_short))
+            invalidateOptionsMenuCompat()
+            return
+        }
+        val input = android.widget.EditText(this).apply {
+            hint = getString(R.string.record_name_hint)
+            setText(getString(R.string.record_default_name, System.currentTimeMillis() / 1000 % 10000))
+        }
+        AlertDialog.Builder(this)
+            .setTitle(R.string.record_save_title)
+            .setMessage(getString(R.string.record_save_msg, count))
+            .setView(input)
+            .setPositiveButton(R.string.save) { _, _ ->
+                val name = input.text.toString().ifBlank {
+                    getString(R.string.record_default_name, System.currentTimeMillis() / 1000 % 10000)
+                }
+                val saved = com.whaleroam.service.RouteRecorder.stopAndSave(this, name)
+                if (saved != null) {
+                    toast(getString(R.string.record_saved, saved.name, saved.points.size))
+                } else {
+                    toast(getString(R.string.record_too_short))
+                }
+                invalidateOptionsMenuCompat()
+            }
+            .setNegativeButton(R.string.cancel) { _, _ ->
+                com.whaleroam.service.RouteRecorder.cancel()
+                invalidateOptionsMenuCompat()
+            }
+            .setOnCancelListener {
+                com.whaleroam.service.RouteRecorder.cancel()
+                invalidateOptionsMenuCompat()
+            }
+            .show()
+    }
+
+    /** 按 JoystickToggle 的真实状态刷新摇杆按钮文案 */
+    private fun syncJoystickButton() {
+        binding.joystickBtn.text = getString(
+            if (JoystickToggle.visible) R.string.action_joystick_stop else R.string.action_joystick
+        )
+    }
+
+    /** 录制状态变化后刷新抽屉菜单标题（NavigationView 需要重建菜单才生效） */
+    private fun invalidateOptionsMenuCompat() {
+        val title = if (com.whaleroam.service.RouteRecorder.recording) {
+            getString(R.string.record_stop)
+        } else {
+            getString(R.string.record_start)
+        }
+        binding.navView.menu.findItem(R.id.nav_record)?.title = title
     }
 
     /** WiFi 是否为当前活动网络（WiFi 扫描会干扰网络定位，导致定位闪回真实位置） */
@@ -269,13 +349,46 @@ class MainActivity : AppCompatActivity() {
             action = MockLocationService.ACTION_STOP
         }
         startService(svc)
-        mocking = false
-        binding.startFab.text = getString(R.string.action_start)
-        binding.startFab.setIconResource(R.drawable.ic_play)
-        binding.statusText.text = getString(R.string.status_idle)
+        // v1.4.0 修复：停止模拟后摇杆仍在运行，状态不一致且继续占着前台服务
+        if (JoystickToggle.visible) {
+            stopService(Intent(this, JoystickService::class.java))
+            JoystickToggle.visible = false
+            syncJoystickButton()
+        }
+        // 路线回放依附于模拟定位，一并停止
+        com.whaleroam.service.RouteReplayer.stop()
+        // 录制同理：模拟一停，摇杆不再上报坐标，继续"录制"只会录到一段静止的空轨迹。
+        // 这里自动收尾并提示用户，避免录制状态悬挂在后台。
+        if (com.whaleroam.service.RouteRecorder.recording) {
+            com.whaleroam.service.RouteRecorder.cancel()
+            toast(getString(R.string.record_auto_cancelled))
+            invalidateOptionsMenuCompat()
+        }
+        applyMockingUi(false)
+    }
+
+    /** 统一刷新「启动/停止模拟」按钮与状态文字（避免各处散落重复代码） */
+    private fun applyMockingUi(running: Boolean) {
+        mocking = running
+        binding.startFab.text = getString(if (running) R.string.action_stop else R.string.action_start)
+        binding.startFab.setIconResource(if (running) R.drawable.ic_stop else R.drawable.ic_play)
+        binding.statusText.text = if (running) {
+            getString(R.string.status_running, targetLat, targetLon)
+        } else {
+            getString(R.string.status_idle)
+        }
     }
 
     private fun toggleJoystick() {
+        // v1.4.0：模拟未启动时摇杆虽然能显示，但拖动不会有任何效果，先给出明确提示
+        if (!JoystickToggle.visible && !MockLocationEngine.running) {
+            AlertDialog.Builder(this)
+                .setTitle(R.string.action_joystick)
+                .setMessage(R.string.joystick_need_mock_first)
+                .setPositiveButton(R.string.ok, null)
+                .show()
+            return
+        }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Settings.canDrawOverlays(this)) {
             AlertDialog.Builder(this)
                 .setMessage(R.string.status_need_overlay)
@@ -295,12 +408,11 @@ class MainActivity : AppCompatActivity() {
         if (JoystickToggle.visible) {
             stopService(svc)
             JoystickToggle.visible = false
-            binding.joystickBtn.text = getString(R.string.action_joystick)
         } else {
             ContextCompat.startForegroundService(this, svc)
             JoystickToggle.visible = true
-            binding.joystickBtn.text = getString(R.string.action_joystick_stop)
         }
+        syncJoystickButton()
     }
 
     // ---------- 搜索 / 坐标输入 ----------
@@ -494,6 +606,10 @@ class MainActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         binding.mapView.onResume()
+        // v1.4.0：用户可能在通知栏点了「停止模拟」，回到界面时同步真实状态
+        if (mocking != MockLocationEngine.running) applyMockingUi(MockLocationEngine.running)
+        // 同理：摇杆可能被通知栏「关闭摇杆」关掉，按钮文案要跟着回来
+        syncJoystickButton()
     }
 
     override fun onPause() {

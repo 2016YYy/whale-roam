@@ -75,7 +75,8 @@
                     android:orientation="vertical" android:padding="16dp">
                     <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
                         android:text="历史记录有效期（天）" android:textStyle="bold" android:textSize="15sp" android:textColor="@color/whale_primary_dark" />
-                    <SeekBar android:id="@+id/historyDaysBar" android:layout_width="match_parent" android:layout_height="wrap_content" android:max="30" />
+                    <!-- v1.4.0 修复：设置项允许 1~365 天，此前 SeekBar 上限只有 30 天，用户无法设到 30 天以上 -->
+                    <SeekBar android:id="@+id/historyDaysBar" android:layout_width="match_parent" android:layout_height="wrap_content" android:max="364" />
                     <TextView android:id="@+id/historyDaysVal" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="7 天" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>

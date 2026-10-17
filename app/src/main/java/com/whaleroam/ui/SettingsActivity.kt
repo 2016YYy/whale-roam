@@ -62,10 +62,12 @@ class SettingsActivity : AppCompatActivity() {
             onChange = { p -> settings.bikeSpeedMps = (p / 10f).coerceAtLeast(0.1f) })
 
         // ---------- 历史记录有效期 ----------
+        // v1.4.0 修复：SeekBar 的 max 为 364（即 progress 0~364），对应天数 1~365，
+        // 此前 max 只有 30，用户无法把有效期设到 30 天以上，与设置项 1~365 的约束不符
         bindSeekBar(R.id.historyDaysBar, R.id.historyDaysVal,
-            init = settings.historyExpirationDays,
-            fmt = { "${it.coerceAtLeast(1)} 天" },
-            onChange = { p -> settings.historyExpirationDays = p.coerceAtLeast(1) })
+            init = (settings.historyExpirationDays - 1).coerceIn(0, 364),
+            fmt = { "${it + 1} 天" },
+            onChange = { p -> settings.historyExpirationDays = (p + 1).coerceIn(1, 365) })
 
         // ---------- 关于 ----------
         val disclaimerRow = findViewById<TextView>(R.id.rowDisclaimer)
