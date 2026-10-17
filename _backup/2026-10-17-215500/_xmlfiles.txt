@@ -1,2 +1,0 @@
-E:\AIDame\DeepSeekHarnessGithub\whale-roam\app\src\main\res\values\strings_disclaimer.xml
-E:\AIDame\DeepSeekHarnessGithub\whale-roam\app\src\main\res\layout\dialog_disclaimer.xml

@@ -24,3 +24,8 @@ build/
 
 # 提交信息临时文件（避免误提交）
 _commit_msg.tmp
+
+# 本地备份目录与临时脚本（严禁入库）
+/_backup/
+_xcheck.py
+commit-msg-*.tmp
