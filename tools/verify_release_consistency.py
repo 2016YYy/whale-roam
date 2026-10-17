@@ -145,12 +145,23 @@ def main():
         tag = rel["tag_name"]
         for a in rel["assets"]:
             dest = os.path.join(tmpdir, a["name"])
-            # 本地缓存优先：release/_verify_cache 下同名同 size 直接用，省去重复下载
-            cached = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-                                  "release", "_verify_cache", a["name"])
-            if os.path.exists(cached) and os.path.getsize(cached) == a["size"]:
-                shutil.copyfile(cached, dest)
-                print("    (使用本地缓存)" + a["name"])
+            # 本地缓存优先：同名同 size 的 APK 直接复用，免去重复下载 27MB
+            # 查找顺序：环境变量 WHALE_APK_CACHE > 工作区 _build-cache/whale-roam-verify-apks
+            ws_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+            candidates = [c for c in (
+                os.environ.get("WHALE_APK_CACHE"),
+                os.path.join(ws_dir, "_build-cache", "whale-roam-verify-apks"),
+                os.path.join(ws_dir, "whale-roam", "release", "_verify_cache"),
+            ) if c]
+            hit = None
+            for c in candidates:
+                p = os.path.join(c, a["name"]) if os.path.basename(c) != a["name"] else c
+                if os.path.exists(p) and os.path.getsize(p) == a["size"]:
+                    hit = p
+                    break
+            if hit:
+                shutil.copyfile(hit, dest)
+                print("    (使用本地缓存) " + a["name"])
             else:
                 r = s.get(a["browser_download_url"], timeout=600, allow_redirects=True)
                 if r.status_code != 200:
