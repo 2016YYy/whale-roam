@@ -78,20 +78,41 @@ apksigner sign --ks whale-roam-release.jks --ks-pass pass:<storePassword> \
 
 ## 3. 发版流程（Checklist）
 
+> 下面第 4 步（敏感信息扫描）是**硬性闸门**：扫描不通过禁止构建、禁止发版。
+
 1. **合码**：确认 `main` 分支包含本次全部变更，CI/本地构建通过。
-2. **改版本号**：`app/build.gradle.kts` 中更新 `versionCode`（+1）与 `versionName`。
+
+2. **敏感信息扫描（必做，发版闸门）**：
+
+   ```powershell
+   .\tools\scan-secrets.ps1            # 扫 Git 全历史 + 敏感文件跟踪检查
+   .\tools\scan-secrets.ps1 -Cloud     # 额外扫描线上全部 Release 资产
+   ```
+
+   退出码非 0 时**立即停止发版**，逐条确认真泄露还是误报：
+   - 真泄露：轮换凭证、从 Git 历史中清除（`git filter-repo`），再重新扫描
+   - 误报：在 `.gitleaks.toml` 加 allowlist，或在行尾加 `# gitleaks:allow`
+
+   说明：
+   - gitleaks 二进制在 `tools/gitleaks/gitleaks.exe`（不入库），缺失时跑 `.\tools\install-gitleaks.ps1`
+   - `git commit` 前的自动扫描钩子模板在 `tools/hooks/pre-commit`，普通终端可用 `.\tools\install-hooks.ps1` 安装；沙箱环境下 Git 无法执行 sh 钩子，改用上面的显式脚本
+
+   > 本项目实测记录（2026-10-22）：31 个提交、6 个 Release 资产全部扫描，未发现敏感信息。
+
+3. **改版本号**：
+3. **改版本号**：`app/build.gradle.kts` 中更新 `versionCode`（+1）与 `versionName`。
 
    > ⚠️ **版本号（versionName / versionCode）必须随本次发版一并提交入库**，不能只改本地构建。否则从源码构建出的包版本号会落后于线上发布包，用户覆盖升级会直接失败——v1.2 / v1.3 就是实际踩过这个坑（仓库长期停留在 versionCode=2 / 1.1.0，而线上已是 versionCode=4 / 1.3.0）。
 
-3. **写 CHANGELOG**：在 `CHANGELOG.md` 中将 `[Unreleased]` 条目整理为正式版本段（`## [x.y.z] - YYYY-MM-DD`），按「新增 / 变更 / 修复 / 移除 / 安全」分类，条目面向用户、一行一条，并附 compare 链接。
-4. **构建签名包**：
+4. **写 CHANGELOG**：在 `CHANGELOG.md` 中将 `[Unreleased]` 条目整理为正式版本段（`## [x.y.z] - YYYY-MM-DD`），按「新增 / 变更 / 修复 / 移除 / 安全」分类，条目面向用户、一行一条，并附 compare 链接。
+5. **构建签名包**：
 
    ```bash
    ./gradlew assembleRelease
    ```
 
    产物位于 `app/build/outputs/apk/release/`，重命名为 `whale-roam-v<版本号>.apk`。
-5. **推送 Tag**：**必须使用附注标签（annotated tag）**，不要用轻量标签，以便 Tag 本身携带发版说明：
+6. **推送 Tag**：**必须使用附注标签（annotated tag）**，不要用轻量标签，以便 Tag 本身携带发版说明：
 
    ```bash
    git tag -a v<版本号> -m "鲸游 WhaleRoam v<版本号>: <一句话要点>"
@@ -99,11 +120,11 @@ apksigner sign --ks whale-roam-release.jks --ks-pass pass:<storePassword> \
    ```
 
    > 历史遗留：v1.0.0 与 v1.4.0 曾用轻量标签，已于 2026-10-17 重建为附注标签（v1.4.0 同时前移，使 Tag 内容包含校正后的 CHANGELOG）。
-6. **建 Release**：基于该 Tag 发布，标题 `鲸游 WhaleRoam v<版本号>`，正文**严格按第 4 节的统一模板**撰写（不要直接粘贴 CHANGELOG 段落——CHANGELOG 用 `### 新增/变更/修复` 的分类，Release 正文另需「安装说明」与 CHANGELOG 链接），并上传签名 APK。
+7. **建 Release**：基于该 Tag 发布，标题 `鲸游 WhaleRoam v<版本号>`，正文**严格按第 4 节的统一模板**撰写（不要直接粘贴 CHANGELOG 段落——CHANGELOG 用 `### 新增/变更/修复` 的分类，Release 正文另需「安装说明」与 CHANGELOG 链接），并上传签名 APK。
 
    正文草稿放在 `release/RELEASE_BODY.md`，然后用 `python tools/release.py --version <x.y.z> --code <n>` 一键建 Tag / Release / 上传资产。
-7. **更新 latest.json**：将 `versionName` / `versionCode` / `changelog` / `apkUrl` 更新为新版本（`apkUrl` 指向刚上传的 APK 下载地址），提交并推送——应用内更新即以此文件为准。
-8. **自检**：用旧版本 App 手动点「检查更新」，确认能发现新版本、下载进度正常、签名校验通过、可覆盖安装。
+8. **更新 latest.json**：将 `versionName` / `versionCode` / `changelog` / `apkUrl` 更新为新版本（`apkUrl` 指向刚上传的 APK 下载地址），提交并推送——应用内更新即以此文件为准。
+9. **自检**：用旧版本 App 手动点「检查更新」，确认能发现新版本、下载进度正常、签名校验通过、可覆盖安装。
 
 ## 4. Release 说明（更新日志）写法
 

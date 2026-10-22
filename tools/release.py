@@ -11,6 +11,7 @@
 - 资产上传必须走 uploads.github.com（api.github.com 会返回 404）
 - 上传前用 aapt2 校验 APK 的 versionCode/versionName，防止发错包
 - 上传后用 GitHub 返回的 digest（sha256）与本地文件比对，确认字节一致
+- **发版前强制跑 gitleaks 敏感信息扫描**（--skip-secret-scan 仅限确知安全时使用）
 """
 import argparse
 import hashlib
@@ -76,10 +77,51 @@ def verify_apk(path, version_name, version_code):
     print(f"[ok] APK 版本校验通过：{version_name} ({version_code})")
 
 
+def run_secret_scan(root):
+    """发版前的敏感信息硬闸门：gitleaks 扫全历史，不通过就中止发版。"""
+    exe = os.path.join(root, "tools", "gitleaks", "gitleaks.exe")
+    if not os.path.exists(exe):
+        print("[warn] 未找到 gitleaks，跳过扫描（建议先跑 tools/install-gitleaks.ps1）")
+        return
+    print("[scan] gitleaks 扫描 Git 全历史...")
+    report = os.path.join(root, "build", "gitleaks-report.json")
+    os.makedirs(os.path.dirname(report), exist_ok=True)
+    out = subprocess.run([exe, "detect", "--source", ".", "--no-banner", "--redact",
+                          "--report-path", report, "--report-format", "json"],
+                         cwd=root, capture_output=True, text=True,
+                         encoding="utf-8", errors="replace")
+    for line in (out.stdout or "").splitlines():
+        if line.strip():
+            print("  " + line.strip())
+    if out.returncode != 0:
+        raise SystemExit(
+            "[FAIL] 发现疑似敏感信息，已中止发版。\n"
+            "       报告: %s\n"
+            "       确认是误报后可用 --skip-secret-scan 跳过（请勿随意使用）" % report
+        )
+    print("[ok] 敏感信息扫描通过")
+
+
+def check_tracked_secrets(root):
+    """确认敏感文件没有被 Git 跟踪（gitleaks 只扫内容，不查文件名）。"""
+    out = subprocess.run(["git", "ls-files"], cwd=root, capture_output=True,
+                         text=True, encoding="utf-8", errors="replace")
+    bad = [l for l in (out.stdout or "").splitlines()
+           if l.endswith((".jks", ".keystore"))
+           or l.endswith("keystore.properties")
+           or l.endswith("local.properties")
+           or l.startswith("tools/gitleaks/")]
+    if bad:
+        raise SystemExit("[FAIL] 以下敏感文件被 Git 跟踪，必须移除后再发版：\n  " + "\n  ".join(bad))
+    print("[ok] 无敏感文件被 Git 跟踪")
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--version", required=True, help="版本号，如 1.4.0")
     ap.add_argument("--code", required=True, type=int, help="versionCode，如 5")
+    ap.add_argument("--skip-secret-scan", action="store_true",
+                    help="跳过 gitleaks 扫描（仅限确知安全时使用）")
     args = ap.parse_args()
 
     tag = "v" + args.version
@@ -93,6 +135,13 @@ def main():
     if not os.path.exists(body_file):
         raise SystemExit(f"Release 正文不存在：{body_file}")
     verify_apk(apk, args.version, args.code)
+
+    # ---- 发版硬闸门：敏感信息扫描 ----
+    if args.skip_secret_scan:
+        print("[warn] 已跳过敏感信息扫描（--skip-secret-scan）")
+    else:
+        run_secret_scan(root)
+    check_tracked_secrets(root)
 
     local_bytes = open(apk, "rb").read()
     local_sha = hashlib.sha256(local_bytes).hexdigest()

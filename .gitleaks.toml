@@ -1,0 +1,24 @@
+# gitleaks 项目配置（鲸游 WhaleRoam）
+# 文档: https://github.com/gitleaks/gitleaks#configuration
+#
+# 注意：正则一律用 TOML 字面量字符串 单引号三连，避免反斜杠被当转义。
+
+[extend]
+# 继承 gitleaks 内置规则（密码 / Token / API Key / 私钥等）
+useDefault = true
+
+[allowlist]
+description = "项目内已知的安全豁免"
+paths = [
+    '''keystore.properties$''',
+    '''local.properties$''',
+    '''build/.*''',
+    '''app/build/.*''',
+    '''.gradle/.*''',
+    '''_build-cache/.*''',
+    '''tools/gitleaks/.*''',
+]
+regexes = [
+    '''https://github.com/2016YYy/whale-roam''',
+    '''https://(ghfast.top|gh-proxy.com|ghproxy.net|ghproxy.cc|cdn.jsdelivr.net)/''',
+]

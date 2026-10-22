@@ -29,3 +29,16 @@ _commit_msg.tmp
 /_backup/
 _xcheck.py
 commit-msg-*.tmp
+
+# v1.5.1 起：gitleaks 二进制与扫描报告不入库（工具随用随装）
+/tools/gitleaks/
+/build/gitleaks-report.json
+
+# 通用临时脚本（下划线前缀）
+_*.py
+_*.ps1
+_*.js
+
+# Python 缓存
+__pycache__/
+*.pyc

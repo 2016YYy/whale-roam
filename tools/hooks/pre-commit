@@ -1,0 +1,24 @@
+#!/bin/sh
+# 鲸游 WhaleRoam pre-commit 钩子：提交前用 gitleaks 扫暂存区
+# 安装: tools/install-hooks.ps1  （或手动复制到 .git/hooks/pre-commit）
+# 绕过（仅在确认误报时）: git commit --no-verify
+
+ROOT="$(git rev-parse --show-toplevel)"
+EXE="$ROOT/tools/gitleaks/gitleaks.exe"
+
+if [ ! -f "$EXE" ]; then
+    echo "[gitleaks] 未安装，跳过扫描。请先运行: tools/install-gitleaks.ps1"
+    exit 0
+fi
+
+echo "[gitleaks] 扫描暂存区..."
+"$EXE" protect --staged --no-banner --redact -v
+CODE=$?
+if [ $CODE -ne 0 ]; then
+    echo ""
+    echo "[gitleaks] 发现疑似敏感信息，提交已被阻止。"
+    echo "           确认是误报可加 `# gitleaks:allow` 行尾注释，或临时 git commit --no-verify"
+    exit 1
+fi
+echo "[gitleaks] 通过"
+exit 0
