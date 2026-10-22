@@ -88,3 +88,21 @@ description: 用 gitleaks 扫描 Git 仓库与发布资产中的密码 / Token /
 | 更新模块 URL | 拼接了私有 token |
 | CI / 脚本 | `GH_TOKEN`、`Authorization: Bearer` 硬编码 |
 | 文档示例 | 真实 token 当示例粘贴 |
+
+## 本机当前状态（2026-10-22 实测）
+
+| 项 | 状态 |
+|---|---|
+| gitleaks 二进制 | `tools/gitleaks/gitleaks.exe`（8.21.2） ✅ |
+| 构建闸门 | `app/build.gradle.kts` 的 `secretScan` 挂到 `preBuild` ✅ |
+| 提交钩子 | `.git/hooks/pre-commit` 已安装，实测拦截 ✅ |
+| 云端体检 | 6 个 Release 资产 + 全历史 30 提交，均无泄露 ✅ |
+| GitHub 平台告警 | secret-scanning alerts open=0 / resolved=0 ✅ |
+
+已验证的拦截效果：
+
+- 暂存区含 `ghp_...` 假 token → 提交被阻止（`leaks found`）
+- 构建前命中 3 条假密钥（AWS AK / 密钥对 / RSA 私钥）→ 构建失败
+
+> 已知限制：gitleaks 内置白名单会放过官方示例密钥（如 `AKIAIOSFODNN7EXAMPLE`），
+> 这是刻意行为，不代表工具失效；真实密钥仍会命中。

@@ -97,7 +97,8 @@ apksigner sign --ks whale-roam-release.jks --ks-pass pass:<storePassword> \
    - **构建已自动扫描**：`app/build.gradle.kts` 里注册了 `secretScan` 任务并挂到 `preBuild`，任何 `assembleXxx` / `bundleXxx` 都会先跑 gitleaks；命中即让**构建失败**，报告在 `build/gitleaks-report.json`
    - 手动闸门仍保留（`tools/scan-secrets.ps1`）：构建只扫 Git 历史，工作区未提交文件由这个脚本和提交钩子覆盖
    - gitleaks 二进制在 `tools/gitleaks/gitleaks.exe`（不入库），缺失时构建会打印提示并跳过扫描，先跑 `.\tools\install-gitleaks.ps1` 安装
-   - `git commit` 前的自动扫描钩子模板在 `tools/hooks/pre-commit`，普通终端可用 `.\tools\install-hooks.ps1` 安装；沙箱环境下 Git 无法执行 sh 钩子，改用显式脚本
+   - **提交前钩子已在本机安装并实测**（`.git/hooks/pre-commit`，模板在 `tools/hooks/pre-commit`，换机器用 `.\tools\install-hooks.ps1` 重装）：暂存区含密钥时提交会被直接阻止；
+     受限沙箱里 Git 可能无法执行 sh 钩子（会报 signal pipe 错误），那种环境下以构建闸门和 `scan-secrets.ps1` 为准
 
    > 本项目实测记录（2026-10-22）：30 个提交、6 个 Release 资产全部扫描，未发现敏感信息；平台侧 GitHub Secret Scanning 告警数 0。
 

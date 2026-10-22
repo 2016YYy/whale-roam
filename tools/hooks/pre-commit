@@ -17,7 +17,7 @@ CODE=$?
 if [ $CODE -ne 0 ]; then
     echo ""
     echo "[gitleaks] 发现疑似敏感信息，提交已被阻止。"
-    echo "           确认是误报可加 `# gitleaks:allow` 行尾注释，或临时 git commit --no-verify"
+    echo "           确认是误报可加 \`# gitleaks:allow\` 行尾注释，或临时 git commit --no-verify"
     exit 1
 fi
 echo "[gitleaks] 通过"
