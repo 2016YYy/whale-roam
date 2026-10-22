@@ -94,12 +94,13 @@ apksigner sign --ks whale-roam-release.jks --ks-pass pass:<storePassword> \
    - 误报：在 `.gitleaks.toml` 加 allowlist，或在行尾加 `# gitleaks:allow`
 
    说明：
-   - gitleaks 二进制在 `tools/gitleaks/gitleaks.exe`（不入库），缺失时跑 `.\tools\install-gitleaks.ps1`
-   - `git commit` 前的自动扫描钩子模板在 `tools/hooks/pre-commit`，普通终端可用 `.\tools\install-hooks.ps1` 安装；沙箱环境下 Git 无法执行 sh 钩子，改用上面的显式脚本
+   - **构建已自动扫描**：`app/build.gradle.kts` 里注册了 `secretScan` 任务并挂到 `preBuild`，任何 `assembleXxx` / `bundleXxx` 都会先跑 gitleaks；命中即让**构建失败**，报告在 `build/gitleaks-report.json`
+   - 手动闸门仍保留（`tools/scan-secrets.ps1`）：构建只扫 Git 历史，工作区未提交文件由这个脚本和提交钩子覆盖
+   - gitleaks 二进制在 `tools/gitleaks/gitleaks.exe`（不入库），缺失时构建会打印提示并跳过扫描，先跑 `.\tools\install-gitleaks.ps1` 安装
+   - `git commit` 前的自动扫描钩子模板在 `tools/hooks/pre-commit`，普通终端可用 `.\tools\install-hooks.ps1` 安装；沙箱环境下 Git 无法执行 sh 钩子，改用显式脚本
 
-   > 本项目实测记录（2026-10-22）：31 个提交、6 个 Release 资产全部扫描，未发现敏感信息。
+   > 本项目实测记录（2026-10-22）：30 个提交、6 个 Release 资产全部扫描，未发现敏感信息；平台侧 GitHub Secret Scanning 告警数 0。
 
-3. **改版本号**：
 3. **改版本号**：`app/build.gradle.kts` 中更新 `versionCode`（+1）与 `versionName`。
 
    > ⚠️ **版本号（versionName / versionCode）必须随本次发版一并提交入库**，不能只改本地构建。否则从源码构建出的包版本号会落后于线上发布包，用户覆盖升级会直接失败——v1.2 / v1.3 就是实际踩过这个坑（仓库长期停留在 versionCode=2 / 1.1.0，而线上已是 versionCode=4 / 1.3.0）。

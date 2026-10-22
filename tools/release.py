@@ -29,7 +29,7 @@ urllib3.disable_warnings()
 REPO = "2016YYy/whale-roam"
 API_IP = "20.205.243.168"
 UPLOAD_IP = "20.205.243.161"
-AAPT = r"H:\WorkBuddyFile\android-sdk\build-tools\35.0.0\aapt2.exe"
+AAPT = r"E:\AIDame\WorkBuddyFile\android-sdk\build-tools\35.0.0\aapt2.exe"
 
 
 class PinnedAdapter(requests.adapters.HTTPAdapter):

@@ -60,6 +60,52 @@ android {
     }
 }
 
+// ---------------------------------------------------------------------------
+// 每次构建自动敏感信息扫描（gitleaks）
+//
+// - 任何 assembleXxx / bundleXxx 都会先跑 secretScan，避免把密钥打进包或推上去
+// - 工具在 tools/gitleaks/gitleaks.exe（不入库）；缺失时打印提示并跳过，不影响无工具环境
+// - 命中即让构建失败（不做降级），要看详情请查 build/gitleaks-report.json
+// ---------------------------------------------------------------------------
+val gitleaksExe = rootProject.file("tools/gitleaks/gitleaks.exe")
+val gitleaksReport = rootProject.file("build/gitleaks-report.json")
+
+val secretScan by tasks.registering(Exec::class) {
+    group = "verification"
+    description = "gitleaks 敏感信息扫描（构建前自动执行）"
+    workingDir = rootProject.projectDir
+    isIgnoreExitValue = false
+
+    onlyIf {
+        if (!gitleaksExe.exists()) {
+            logger.warn("[secretScan] 未找到 gitleaks：${gitleaksExe.absolutePath}，已跳过扫描。安装：tools/install-gitleaks.ps1")
+            false
+        } else if (!rootProject.file(".git").exists()) {
+            logger.warn("[secretScan] 非 Git 仓库，跳过历史扫描")
+            false
+        } else {
+            true
+        }
+    }
+
+    doFirst {
+        gitleaksReport.parentFile.mkdirs()
+        commandLine(
+            gitleaksExe.absolutePath, "detect",
+            "--source", ".",
+            "--no-banner",
+            "--redact",
+            "--report-path", gitleaksReport.absolutePath,
+            "--report-format", "json"
+        )
+    }
+}
+
+// 挂到所有构建入口之前（debug / release 都会经过 preBuild）
+tasks.matching { it.name == "preBuild" || it.name.startsWith("preBuild") }.configureEach {
+    dependsOn(secretScan)
+}
+
 kotlin {
     compilerOptions {
         jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)

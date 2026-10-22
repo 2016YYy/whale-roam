@@ -34,8 +34,8 @@ urllib3.disable_warnings()
 REPO = "2016YYy/whale-roam"
 API_IP = "20.205.243.168"
 UPLOAD_IP = "20.205.243.161"
-AAPT = r"H:\WorkBuddyFile\android-sdk\build-tools\35.0.0\aapt2.exe"
-APKSIGNER = r"H:\WorkBuddyFile\android-sdk\build-tools\35.0.0\apksigner.bat"
+AAPT = r"E:\AIDame\WorkBuddyFile\android-sdk\build-tools\35.0.0\aapt2.exe"
+APKSIGNER = r"E:\AIDame\WorkBuddyFile\android-sdk\build-tools\35.0.0\apksigner.bat"
 EXPECTED_CERT = "137d9f9cb8330b4b36872ab5e5054b6fe9e162c85717994e5fabab43a9e3ad5c"
 
 problems = []
